@@ -1,0 +1,36 @@
+# Node / frontend
+node_modules/
+dist/
+build/
+.next/
+.vite/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database / temp
+*.sqlite
+*.db
+tmp/
+temp/
