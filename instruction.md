@@ -226,42 +226,98 @@ build/
 e.g. `.gitignore`
 
 ```gitignore
-# Node / frontend
+# ==========================================
+# 1. Node / Frontend
+# ==========================================
 node_modules/
 dist/
 build/
 .next/
 .vite/
+.eslintcache
 
-# Python
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==========================================
+# 2. Python & Jupyter
+# ==========================================
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
 .venv/
 venv/
 env/
 
-# Env files
-.env
-.env.local
-.env.*.local
+.pytest_cache/
+.mypy_cache/
 
-# Logs
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# ==========================================
+# 3. GIS / Data Engineering
+# ==========================================
+*.lock
+*.qgs.~
+
+# GIS spatial index cache
+*.sbn
+*.sbx
+*.fbn
+*.fbx
+*.ain
+*.aih
+*.atx
+*.ixs
+*.mxs
+
+# GIS databases
+*.sqlite
+*.gpkg
+*.db
+
+
+
+# ==========================================
+# 4. Env files
+# ==========================================
+.env*
+!.env.example
+
+# ==========================================
+# 5. Logs & Temporary
+# ==========================================
 *.log
 logs/
+tmp/
+temp/
 
-# IDE
+# ==========================================
+# 6. IDE / Editor
+# ==========================================
 .vscode/
 .idea/
 
-# OS
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ==========================================
+# 7. Database Dumps
+# ==========================================
+*.sql
+
+# ==========================================
+# 8. OS Files
+# ==========================================
 .DS_Store
 Thumbs.db
-
-# Database / temp
-*.sqlite
-*.db
-tmp/
-temp/
 ```
 
 ### 7. 服务器端如何更新代码
@@ -433,58 +489,46 @@ CREATE TABLE IF NOT EXISTS restaurants (
     restaurant_telephone VARCHAR(100),
     restaurant_category VARCHAR(100),
     restaurant_avg_price NUMERIC(10, 2),
-    restaurant_geom_position geometry(Point, 4326) NOT NULL,
+    restaurant_geom_position geometry(PointZ, 4326) NOT NULL,
     restaurant_text_position TEXT,
     source VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index for restaurants
-CREATE INDEX IF NOT EXISTS idx_restaurants_geom
-ON restaurants
-USING GIST (restaurant_geom_position);
+CREATE INDEX IF NOT EXISTS idx_restaurants_geom ON restaurants USING GIST (restaurant_geom_position);
+CREATE INDEX IF NOT EXISTS idx_restaurants_category ON restaurants (restaurant_category);
+CREATE INDEX IF NOT EXISTS idx_restaurants_rate ON restaurants (restaurant_rate);
+CREATE INDEX IF NOT EXISTS idx_restaurants_price ON restaurants (restaurant_avg_price);
+CREATE INDEX IF NOT EXISTS idx_restaurants_name ON restaurants (restaurant_name);
 
-CREATE INDEX IF NOT EXISTS idx_restaurants_category
-ON restaurants (restaurant_category);
-
-CREATE INDEX IF NOT EXISTS idx_restaurants_rate
-ON restaurants (restaurant_rate);
-
-CREATE INDEX IF NOT EXISTS idx_restaurants_price
-ON restaurants (restaurant_avg_price);
-
-CREATE INDEX IF NOT EXISTS idx_restaurants_name
-ON restaurants (restaurant_name);
-
--- Table for landmatks
+-- Table for landmarks
 CREATE TABLE IF NOT EXISTS landmarks (
     landmark_id SERIAL PRIMARY KEY,
     landmark_name VARCHAR(255) NOT NULL,
     landmark_type VARCHAR(100),
-    landmark_geom_position geometry(Point, 4326) NOT NULL,
+    landmark_geom_position geometry(PointZ, 4326) NOT NULL,
     landmark_text_position TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index for landmarks
-CREATE INDEX IF NOT EXISTS idx_landmarks_geom
-ON landmarks
-USING GIST (landmark_geom_position);
+CREATE INDEX IF NOT EXISTS idx_landmarks_geom ON landmarks USING GIST (landmark_geom_position);
+CREATE INDEX IF NOT EXISTS idx_landmarks_name ON landmarks (landmark_name);
 
 -- Table for transportations
 CREATE TABLE IF NOT EXISTS transportations (
     transportation_id SERIAL PRIMARY KEY,
     transportation_name VARCHAR(255) NOT NULL,
     transportation_type VARCHAR(100),
-    transportation_geom_position geometry(Point, 4326) NOT NULL,
+    transportation_geom_position geometry(PointZ, 4326) NOT NULL,
     transportation_text_position TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index for transportations
-CREATE INDEX IF NOT EXISTS idx_transportations_geom
-ON transportations
-USING GIST (transportation_geom_position);
+CREATE INDEX IF NOT EXISTS idx_transportations_geom ON transportations USING GIST (transportation_geom_position);
+CREATE INDEX IF NOT EXISTS idx_transportations_name ON transportations (transportation_name);
 
 -- Table for check list
 CREATE TABLE IF NOT EXISTS check_list (
@@ -496,11 +540,8 @@ CREATE TABLE IF NOT EXISTS check_list (
 );
 
 -- Index for check list
-CREATE UNIQUE INDEX IF NOT EXISTS idx_check_list_restaurant
-ON check_list (restaurant_id);
-
-CREATE INDEX IF NOT EXISTS idx_check_list_order
-ON check_list (check_order);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_check_list_restaurant ON check_list (restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_check_list_order ON check_list (check_order);
 ```
 
 ### 后端连接数据库
