@@ -42,6 +42,12 @@ ssh -p <AutoDL实例端口号> root@<AutoDL实例域名> -L 6006:127.0.0.1:6006
 
 # 实际就是下面这个
 ssh -p 40984 root@connect.westc.seetacloud.com -L 6006:127.0.0.1:6006
+
+密码是：omlfS6T+T0mU
+
+# 关闭输入
+exit
+
 ```
 
 *(注：执行后输入服务器登录密码。登录成功后，请保持该终端窗口在后台开启，切勿关闭。)*
@@ -68,6 +74,9 @@ service postgresql start
 psql -h 127.0.0.1 -U citytaste_user -d citytaste
 
 密码：123456
+
+# 关闭数据库输入下面：
+service postgresql stop
 
 ```
 
