@@ -1,0 +1,391 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  color: #332821;
+  background: #fff3e6;
+}
+
+.app-shell {
+  width: 100vw;
+  height: 100vh;
+  background: #fff3e6;
+}
+
+.sidebar {
+  height: 100vh;
+  padding: 22px 20px;
+  overflow-y: auto;
+  color: #332821;
+  background: #fff7eb !important;
+  border-right: 1px solid #efd8bf;
+  box-shadow: 10px 0 30px rgba(107, 73, 52, 0.14);
+}
+
+.sidebar::-webkit-scrollbar,
+.restaurant-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.restaurant-list::-webkit-scrollbar-thumb {
+  background: #e4b995;
+  border-radius: 8px;
+}
+
+.brand {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.brand-mark {
+  display: grid;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  color: #fffaf3;
+  background: #e76f51;
+  border-radius: 7px;
+  box-shadow: 0 10px 20px rgba(231, 111, 81, 0.26);
+}
+
+.brand .ant-typography {
+  margin: 0;
+}
+
+.brand h3.ant-typography {
+  color: #2f231d;
+  font-size: 25px;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.summary-grid .ant-statistic,
+.control-section,
+.selected-card,
+.result-section {
+  background: rgba(255, 250, 243, 0.92);
+  border: 1px solid #efd8bf;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(118, 82, 57, 0.07);
+}
+
+.summary-grid .ant-statistic {
+  min-width: 0;
+  padding: 11px;
+}
+
+.summary-grid .ant-statistic-title {
+  margin-bottom: 4px;
+  color: #8a7266;
+  font-size: 12px;
+}
+
+.summary-grid .ant-statistic-content {
+  color: #332821;
+  font-size: 19px;
+  line-height: 1.2;
+}
+
+.feature-tabs .ant-tabs-nav {
+  margin-bottom: 12px;
+}
+
+.feature-tabs .ant-tabs-tab {
+  padding: 8px 0;
+  color: #7b695f;
+}
+
+.feature-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #d95f43;
+  font-weight: 700;
+}
+
+.control-section,
+.selected-card,
+.result-section {
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.section-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+  color: #994832;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.control-stack,
+.control-stack .ant-select,
+.control-stack .ant-input-affix-wrapper,
+.control-stack .ant-input-number {
+  width: 100%;
+}
+
+.slider-block {
+  padding-top: 2px;
+}
+
+.slider-label,
+.action-row,
+.meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.slider-label {
+  margin-bottom: 4px;
+  color: #7b695f;
+  font-size: 13px;
+}
+
+.slider-label strong {
+  color: #3a2c24;
+}
+
+.action-row .ant-btn {
+  flex: 1;
+}
+
+.highlight-card {
+  border-color: #efb18f;
+  background: #fff3e7;
+}
+
+.selected-card h4.ant-typography {
+  margin: 6px 0 10px;
+  color: #30231d;
+  font-size: 18px;
+}
+
+.selected-card p {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  margin-bottom: 14px;
+  color: #766259;
+  line-height: 1.55;
+}
+
+.meta-row {
+  justify-content: flex-start;
+  color: #5d493f;
+}
+
+.meta-row .anticon,
+.restaurant-side .anticon {
+  color: #f4a261;
+}
+
+.info-strip {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 40px;
+  padding: 9px 11px;
+  color: #6a554b;
+  background: #fff4e6;
+  border: 1px solid #efddcc;
+  border-radius: 6px;
+}
+
+.chart-card {
+  min-height: 240px;
+  background: #fffaf3;
+  border: 1px solid #f0dfcf;
+  border-radius: 8px;
+}
+
+.route-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.route-summary .ant-statistic {
+  padding: 12px;
+  background: #fff4e6;
+  border: 1px solid #efddcc;
+  border-radius: 8px;
+}
+
+.result-section {
+  padding-bottom: 10px;
+}
+
+.restaurant-list {
+  max-height: 34vh;
+  margin-top: 12px;
+  overflow-y: auto;
+}
+
+.restaurant-list .ant-list-item {
+  padding: 11px 10px;
+  cursor: pointer;
+  border-block-end: 1px solid #f0dfcf;
+  border-radius: 7px;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.restaurant-list .ant-list-item:hover,
+.restaurant-list .ant-list-item.active {
+  background: #fff0df;
+}
+
+.restaurant-list .ant-list-item:hover {
+  transform: translateY(-1px);
+}
+
+.restaurant-list .ant-list-item.active {
+  border-color: #e76f51;
+}
+
+.restaurant-main {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.restaurant-main .ant-typography {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.restaurant-side {
+  display: grid;
+  flex: 0 0 92px;
+  gap: 6px;
+  justify-items: end;
+  color: #5d493f;
+}
+
+.restaurant-side .ant-tag,
+.meta-row .ant-tag {
+  max-width: 90px;
+  margin-inline-end: 0;
+  overflow: hidden;
+  color: #8f442f;
+  text-overflow: ellipsis;
+  background: #fff1e4;
+  border-color: #f0c5aa;
+}
+
+.checklist-section .ant-btn {
+  margin-bottom: 8px;
+}
+
+.check-order {
+  display: grid;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  color: #fffaf3;
+  font-weight: 700;
+  background: #7aa95c;
+  border-radius: 6px;
+}
+
+.map-panel {
+  position: relative;
+  min-width: 0;
+  background: #f3eadf;
+}
+
+.cesium-map-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#cesiumContainer {
+  width: 100%;
+  height: 100%;
+}
+
+.cesium-viewer,
+.cesium-viewer-cesiumWidgetContainer,
+.cesium-widget,
+.cesium-widget canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.cesium-viewer-bottom,
+.cesium-credit-logoContainer {
+  display: none !important;
+}
+
+.map-hover-card {
+  position: absolute;
+  z-index: 10;
+  display: grid;
+  min-width: 150px;
+  max-width: 230px;
+  gap: 3px;
+  padding: 10px 12px;
+  color: #39261f;
+  pointer-events: none;
+  background: rgba(255, 250, 243, 0.96);
+  border: 1px solid #efb18f;
+  border-radius: 8px;
+  box-shadow: 0 12px 26px rgba(104, 67, 46, 0.18);
+}
+
+.map-hover-card strong {
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-hover-card span {
+  color: #7a6054;
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100% !important;
+    max-width: none !important;
+    height: 52vh;
+    border-right: 0;
+    border-bottom: 1px solid #efd8bf;
+  }
+
+  .map-panel {
+    height: 48vh;
+  }
+}
