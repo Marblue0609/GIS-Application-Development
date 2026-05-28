@@ -366,9 +366,14 @@ ECharts 展示统计结果
 - 分工不定死, 根据实际情况来; 
 
 ## 规定: 
-- 文件名使用下划线命名法, 比如 `group_nine.md`; 
-- 函数名尽可能使用大写的开头 + 驼峰命名, 比如 `SearchRestaurant(condition)`;
-- 变量名尽可能使用驼峰命名, 比如 `string thisCondition;`;
+- 前端文件中: 
+  - 文件名使用下划线命名法, 比如 `group_nine.md`; 
+  - 函数名尽可能使用大写的开头 + 驼峰命名, 比如 `SearchRestaurant(condition)`;
+  - 变量名尽可能使用驼峰命名, 比如 `string thisCondition;`;
+- Python 文件中: 
+  - 文件名, 变量名, 变量名使用下划线命名法, 比如 `group_nine.md`; 
+  - 常量使用全大写 + 下划线命名法, 比如 `BASE_URL`; 
+  - 类名尽可能使用大写开头的驼峰命名, 比如 `class ThisIsAClass: `;
 - 一定要有注释, API 最好能有示例格式的说明; 
 - **善用 git;** 写完代码及时 commit; 
 - 不要在共有服务器上乱用 `rm -rf` 等命令;
