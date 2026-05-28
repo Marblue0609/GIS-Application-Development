@@ -1,6 +1,10 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from app.db.session import get_db
 
 app = FastAPI(
     title="CityTaste API",
@@ -24,13 +28,22 @@ app.add_middleware(
 
 
 @app.get("/", tags=["Root"])
-def Root():
+def root():
     return {"message": "CityTaste API is alive", "docs": "/docs", "openapi": "/openapi.json"}
 
 
+# API Health test
 @app.get("/api/health", tags=["Health Check"])
-def HealthCheck():
+def health_check():
     return {"status": "OK", "version": "0.1.0", "update date": "2026-05-28"}
+
+
+# Database Health test
+@app.get("/api/db/check", tags=["Health Check"])
+def db_health_check(db: Session = Depends(get_db)):
+    result = db.execute(text("SELECT 1 AS OK")).mappings().first()
+
+    return {"database": "connected", "result": result}
 
 
 if __name__ == "__main__":

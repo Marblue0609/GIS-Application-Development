@@ -1,3 +1,9 @@
+"""
+Create a database connection engine,
+generate a database session,
+and provide it for use by the FastAPI interface.
+"""
+
 from collections.abc import Generator
 
 from sqlalchemy import create_engine
