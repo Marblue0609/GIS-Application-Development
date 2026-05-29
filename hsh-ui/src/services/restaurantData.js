@@ -1,3 +1,5 @@
+import { wgs84ToGcj02 } from './mapData';
+
 const getProp = (properties, key, fallback = '') => {
   const value = properties?.[key];
   return value === null || value === undefined ? fallback : value;
@@ -24,9 +26,13 @@ export const normalizeRestaurantFeature = (feature) => {
   const properties = feature?.properties ?? {};
   const coordinates = feature?.geometry?.coordinates ?? [];
   const category = normalizeCategory(getProp(properties, 'restaura_4', '其他'));
+  const lng = Number(getProp(properties, 'lng_wgs84', coordinates[0])) || coordinates[0];
+  const lat = Number(getProp(properties, 'lat_wgs84', coordinates[1])) || coordinates[1];
+  const display = wgs84ToGcj02(lng, lat);
 
   return {
     id: String(getProp(properties, 'restaurant', '')),
+    layerType: 'restaurant',
     name: getProp(properties, 'restaura_1', '未命名餐厅'),
     rating: Number(getProp(properties, 'restaura_2', 0)) || 0,
     phone: getProp(properties, 'restaura_3', '暂无电话'),
@@ -35,8 +41,10 @@ export const normalizeRestaurantFeature = (feature) => {
     categoryCode: getProp(properties, 'restaura_5', ''),
     price: Number(getProp(properties, 'restaura_6', 0)) || 0,
     address: getProp(properties, 'restaura_7', '暂无地址'),
-    lng: Number(getProp(properties, 'lng_wgs84', coordinates[0])) || coordinates[0],
-    lat: Number(getProp(properties, 'lat_wgs84', coordinates[1])) || coordinates[1],
+    lng,
+    lat,
+    displayLng: display.lng,
+    displayLat: display.lat,
   };
 };
 
@@ -54,17 +62,17 @@ export const restaurantMatchesFilters = (restaurant, filters) => {
 };
 
 export const categoryPalette = {
-  '饮品咖啡': '#4f9d8f',
-  '甜品烘焙': '#f2a7a0',
-  '川渝菜': '#e85d3f',
-  '粤菜': '#78a864',
-  '日韩料理': '#5f8ec5',
-  '西餐': '#b45b7a',
-  '火锅': '#f49b3f',
-  '快餐简食': '#d5a12d',
-  '江浙本帮': '#8ab17d',
-  '清真西北': '#8c6f4f',
-  '地方风味': '#c06c54',
-  '综合酒楼': '#7b6d63',
-  '其他': '#9a948d',
+  '饮品咖啡': '#2aa7a5',
+  '甜品烘焙': '#ff8fab',
+  '川渝菜': '#ff6b4a',
+  '粤菜': '#58b86f',
+  '日韩料理': '#5f9df7',
+  '西餐': '#b56bd9',
+  '火锅': '#ff9f1c',
+  '快餐简食': '#f7c948',
+  '江浙本帮': '#7fc97f',
+  '清真西北': '#b88746',
+  '地方风味': '#f07f5f',
+  '综合酒楼': '#7f8a99',
+  '其他': '#a1a8b3',
 };

@@ -13,9 +13,24 @@ const colorFromCategory = (category) => Cesium.Color.fromCssColorString(
   categoryPalette[category] ?? categoryPalette['其他'],
 );
 
-const normalPointAlpha = 0.58;
+const normalPointAlpha = 1;
 const selectedPointColor = Cesium.Color.fromCssColorString('#ff4d2e');
 const selectedOutlineColor = Cesium.Color.fromCssColorString('#fff7ec');
+const landmarkColor = Cesium.Color.fromCssColorString('#4b83c4');
+const transportationColor = Cesium.Color.fromCssColorString('#7eb892');
+const initialView = Cesium.Rectangle.fromDegrees(120.055, 30.285, 120.105, 30.326);
+
+const desaturateColor = (color, amount = 0.5) => new Cesium.Color(
+  color.red + (0.78 - color.red) * amount,
+  color.green + (0.78 - color.green) * amount,
+  color.blue + (0.78 - color.blue) * amount,
+  1,
+);
+
+const getDisplayCenter = (item) => ({
+  lng: item.displayLng ?? item.lng,
+  lat: item.displayLat ?? item.lat,
+});
 
 const addFallbackGridLayer = (viewer) => {
   viewer.imageryLayers.removeAll();
@@ -34,7 +49,7 @@ const addBaseLayer = async (viewer) => {
     viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
       url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
       subdomains: ['a', 'b', 'c', 'd'],
-      credit: 'Map tiles by CARTO, under CC BY 3.0. Data by OpenStreetMap, under ODbL.',
+      credit: 'Map tiles by CARTO. Data by OpenStreetMap.',
       maximumLevel: 19,
     }));
   } catch (error) {
@@ -43,15 +58,44 @@ const addBaseLayer = async (viewer) => {
   }
 };
 
-function CesiumMap({ filteredIds, focusedRestaurantId, onSelectRestaurant }) {
+const createPointEntity = (dataSource, item, color, size) => {
+  const entity = dataSource.entities.add({
+    id: item.id,
+    name: item.name,
+    position: Cesium.Cartesian3.fromDegrees(item.displayLng ?? item.lng, item.displayLat ?? item.lat),
+    point: {
+      pixelSize: size,
+      color,
+      outlineColor: Cesium.Color.WHITE.withAlpha(0.86),
+      outlineWidth: 2,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+    },
+  });
+
+  entity.mapItem = item;
+  entity.categoryColor = color;
+  entity.baseSize = size;
+  return entity;
+};
+
+function CesiumMap({
+  filteredIds,
+  focusedRestaurantId,
+  landmarks,
+  transportations,
+  onSelectRestaurant,
+  onSelectMapItem,
+}) {
   const viewerRef = useRef(null);
   const dataSourceRef = useRef(null);
+  const supportDataSourceRef = useRef(null);
   const containerId = 'cesiumContainer';
-  const [hoveredRestaurant, setHoveredRestaurant] = useState(null);
+  const [hoveredItem, setHoveredItem] = useState(null);
   const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (viewerRef.current) return; // 防止 React StrictMode 下重复初始化
+    let cancelled = false;
 
     // 初始化 Cesium Viewer，隐藏不需要的默认控件，保持界面简洁
     const viewer = new Cesium.Viewer(containerId, {
@@ -73,7 +117,7 @@ function CesiumMap({ filteredIds, focusedRestaurantId, onSelectRestaurant }) {
     viewerRef.current = viewer;
     viewer.scene.globe.enableLighting = false;
     viewer.scene.postProcessStages.fxaa.enabled = true;
-    viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#edf0ea');
+    viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#f4f0e8');
 
     addBaseLayer(viewer);
 
@@ -87,33 +131,20 @@ function CesiumMap({ filteredIds, focusedRestaurantId, onSelectRestaurant }) {
           const restaurant = normalizeRestaurantFeature(feature);
           if (!restaurant.id || !restaurant.lng || !restaurant.lat) return;
 
-          const color = colorFromCategory(restaurant.category);
+          const color = desaturateColor(colorFromCategory(restaurant.category), 0.52);
 
-          const entity = dataSource.entities.add({
-            id: restaurant.id,
-            name: restaurant.name,
-            position: Cesium.Cartesian3.fromDegrees(restaurant.lng, restaurant.lat),
-            properties: feature.properties,
-            point: {
-              pixelSize: 12,
-              color: color.withAlpha(normalPointAlpha),
-              outlineColor: Cesium.Color.WHITE.withAlpha(0.8),
-              outlineWidth: 2,
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            },
-          });
-
-          entity.restaurantData = restaurant;
+          const entity = createPointEntity(dataSource, restaurant, color.withAlpha(normalPointAlpha), 9);
           entity.categoryColor = color;
-          entity.point.color = color.withAlpha(normalPointAlpha);
-          entity.point.outlineColor = Cesium.Color.WHITE.withAlpha(0.8);
         });
 
+        if (cancelled || viewer.isDestroyed()) return;
         dataSourceRef.current = dataSource;
         await viewer.dataSources.add(dataSource);
-        viewer.camera.setView({
-          destination: Cesium.Rectangle.fromDegrees(120.055, 30.285, 120.105, 30.326),
-        });
+        if (!cancelled && !viewer.isDestroyed()) {
+          viewer.camera.setView({
+            destination: initialView,
+          });
+        }
       } catch (error) {
         console.error('加载餐厅数据失败:', error);
       }
@@ -124,19 +155,24 @@ function CesiumMap({ filteredIds, focusedRestaurantId, onSelectRestaurant }) {
     const clickHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
     clickHandler.setInputAction((movement) => {
       const picked = viewer.scene.pick(movement.position);
-      if (!Cesium.defined(picked?.id?.restaurantData)) return;
+      if (!Cesium.defined(picked?.id?.mapItem)) return;
 
-      onSelectRestaurant(picked.id.restaurantData);
+      const item = picked.id.mapItem;
+      if (item.layerType === 'restaurant') {
+        onSelectRestaurant(item);
+      } else {
+        onSelectMapItem(item);
+      }
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
     clickHandler.setInputAction((movement) => {
       const picked = viewer.scene.pick(movement.endPosition);
-      if (!Cesium.defined(picked?.id?.restaurantData)) {
-        setHoveredRestaurant(null);
+      if (!Cesium.defined(picked?.id?.mapItem)) {
+        setHoveredItem(null);
         return;
       }
 
-      setHoveredRestaurant(picked.id.restaurantData);
+      setHoveredItem(picked.id.mapItem);
       setHoverPosition({
         x: movement.endPosition.x,
         y: movement.endPosition.y,
@@ -145,62 +181,104 @@ function CesiumMap({ filteredIds, focusedRestaurantId, onSelectRestaurant }) {
 
     // 组件卸载时销毁 Viewer，释放 Cesium 占用的资源
     return () => {
+      cancelled = true;
       clickHandler.destroy();
       if (viewerRef.current) {
         viewerRef.current.destroy();
         viewerRef.current = null;
       }
     };
-  }, [onSelectRestaurant]);
-
-  useEffect(() => {
-    const dataSource = dataSourceRef.current;
-    if (!dataSource || !filteredIds) return;
-
-    dataSource.entities.values.forEach((entity) => {
-      const isVisible = filteredIds.has(entity.id);
-      const isSelected = entity.id === focusedRestaurantId;
-      const isHovered = entity.id === hoveredRestaurant?.id;
-      entity.show = isVisible;
-      if (entity.point) {
-        entity.point.pixelSize = isSelected ? 21 : isHovered ? 16 : 12;
-        entity.point.outlineWidth = isSelected ? 4 : isHovered ? 3 : 2;
-        entity.point.color = isSelected
-          ? selectedPointColor.withAlpha(1)
-          : entity.categoryColor.withAlpha(isHovered ? 0.86 : normalPointAlpha);
-        entity.point.outlineColor = isSelected
-          ? selectedOutlineColor.withAlpha(1)
-          : Cesium.Color.WHITE.withAlpha(isHovered ? 0.96 : 0.8);
-      }
-    });
-  }, [filteredIds, focusedRestaurantId, hoveredRestaurant]);
+  }, [onSelectRestaurant, onSelectMapItem]);
 
   useEffect(() => {
     const viewer = viewerRef.current;
-    const dataSource = dataSourceRef.current;
-    if (!viewer || !dataSource || !focusedRestaurantId) return;
+    if (!viewer) return;
 
-    const entity = dataSource.entities.values.find(
-      (item) => item.id === focusedRestaurantId,
-    );
+    if (supportDataSourceRef.current) {
+      viewer.dataSources.remove(supportDataSourceRef.current, true);
+    }
+
+    const supportDataSource = new Cesium.CustomDataSource('support-points');
+    landmarks.forEach((item) => {
+      createPointEntity(supportDataSource, item, landmarkColor.withAlpha(1), 14);
+    });
+    transportations.forEach((item) => {
+      createPointEntity(supportDataSource, item, transportationColor.withAlpha(1), 5);
+    });
+
+    supportDataSourceRef.current = supportDataSource;
+    viewer.dataSources.add(supportDataSource);
+  }, [landmarks, transportations]);
+
+  useEffect(() => {
+    const restaurantDataSource = dataSourceRef.current;
+    const supportDataSource = supportDataSourceRef.current;
+    if (!restaurantDataSource || !filteredIds) return;
+
+    restaurantDataSource.entities.values.forEach((entity) => {
+      const isVisible = filteredIds.has(entity.id);
+      const isSelected = entity.id === focusedRestaurantId;
+      const isHovered = entity.id === hoveredItem?.id;
+      entity.show = isVisible;
+      if (entity.point) {
+        entity.point.pixelSize = isSelected ? 18 : isHovered ? 13 : 9;
+        entity.point.outlineWidth = isSelected ? 4 : isHovered ? 3 : 2;
+        entity.point.color = isSelected
+          ? selectedPointColor.withAlpha(1)
+          : entity.categoryColor.withAlpha(1);
+        entity.point.outlineColor = isSelected
+          ? selectedOutlineColor.withAlpha(1)
+          : Cesium.Color.WHITE.withAlpha(isHovered ? 1 : 0.86);
+      }
+    });
+
+    supportDataSource?.entities.values.forEach((entity) => {
+      const isSelected = entity.id === focusedRestaurantId;
+      const isHovered = entity.id === hoveredItem?.id;
+      if (entity.point) {
+        entity.point.pixelSize = isSelected ? 20 : isHovered ? entity.baseSize + 4 : entity.baseSize;
+        entity.point.outlineWidth = isSelected ? 4 : isHovered ? 3 : 2;
+        entity.point.color = isSelected
+          ? selectedPointColor.withAlpha(1)
+          : entity.categoryColor.withAlpha(1);
+        entity.point.outlineColor = isSelected
+          ? selectedOutlineColor.withAlpha(1)
+          : Cesium.Color.WHITE.withAlpha(0.86);
+      }
+    });
+  }, [filteredIds, focusedRestaurantId, hoveredItem]);
+
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    const restaurantDataSource = dataSourceRef.current;
+    const supportDataSource = supportDataSourceRef.current;
+    if (!viewer || !focusedRestaurantId) return;
+
+    const entity = [
+      ...(restaurantDataSource?.entities.values ?? []),
+      ...(supportDataSource?.entities.values ?? []),
+    ].find((item) => item.id === focusedRestaurantId);
+
     if (entity) {
-      const restaurant = entity.restaurantData;
+      const item = entity.mapItem;
+      const { lng, lat } = getDisplayCenter(item);
       viewer.camera.flyTo({
         destination: Cesium.Rectangle.fromDegrees(
-          restaurant.lng - 0.004,
-          restaurant.lat - 0.003,
-          restaurant.lng + 0.004,
-          restaurant.lat + 0.003,
+          lng - 0.004,
+          lat - 0.003,
+          lng + 0.004,
+          lat + 0.003,
         ),
         duration: 0.7,
       });
+
     }
   }, [focusedRestaurantId]);
 
   return (
     <div className="cesium-map-wrap">
       <div id={containerId} />
-      {hoveredRestaurant && (
+      {hoveredItem && (
         <div
           className="map-hover-card"
           style={{
@@ -208,11 +286,16 @@ function CesiumMap({ filteredIds, focusedRestaurantId, onSelectRestaurant }) {
             top: `${hoverPosition.y + 14}px`,
           }}
         >
-          <strong>{hoveredRestaurant.name}</strong>
-          <span>{hoveredRestaurant.category}</span>
-          <span>评分 {hoveredRestaurant.rating || '-'}</span>
+          <strong>{hoveredItem.name}</strong>
+          <span>{hoveredItem.category}</span>
+          {hoveredItem.layerType === 'restaurant' && <span>评分 {hoveredItem.rating || '-'}</span>}
         </div>
       )}
+      <div className="map-legend">
+        <span><i className="legend-rest" />餐厅</span>
+        <span><i className="legend-landmark" />地标</span>
+        <span><i className="legend-transport" />交通</span>
+      </div>
     </div>
   );
 }

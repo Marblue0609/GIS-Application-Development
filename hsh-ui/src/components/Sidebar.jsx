@@ -37,22 +37,37 @@ const travelModes = [
   { value: 'driving', label: '驾车' },
 ];
 
+const uniqueBy = (items, getKey) => {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = getKey(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 function Sidebar({
   categories,
   filters,
   onFiltersChange,
   restaurants,
+  landmarks,
+  transportations,
   selectedRestaurant,
+  selectedMapItem,
   stats,
   categoryStats,
   checklist,
   onSelectRestaurant,
   onSaveRestaurant,
   onRemoveRestaurant,
+  onSelectMapItem,
 }) {
   const [radius, setRadius] = useState(1000);
   const [routeMode, setRouteMode] = useState('walking');
   const [routeStart, setRouteStart] = useState('当前位置');
+  const [analysisCenterId, setAnalysisCenterId] = useState(null);
 
   const updateFilters = (patch) => {
     onFiltersChange((current) => ({ ...current, ...patch }));
@@ -62,6 +77,32 @@ function Sidebar({
     value: category,
     label: category,
   }));
+
+  const uniqueTransportations = uniqueBy(
+    transportations,
+    (item) => `${item.name}-${item.category}`,
+  );
+
+  const analysisCenterOptions = [
+    ...landmarks.map((item) => ({
+      value: item.id,
+      label: `地标 · ${item.name}`,
+      item,
+    })),
+    ...uniqueTransportations.slice(0, 80).map((item) => ({
+      value: item.id,
+      label: `交通 · ${item.name}`,
+      item,
+    })),
+  ];
+
+  const routeStartOptions = [
+    { value: '当前位置', label: '当前位置' },
+    ...uniqueBy(uniqueTransportations, (item) => item.name).slice(0, 80).map((item) => ({
+      value: item.name,
+      label: item.name,
+    })),
+  ];
 
   const bufferChartOption = useMemo(() => ({
     color: ['#e76f51', '#f4a261', '#8ab17d', '#6d9dc5', '#b07aa1', '#7f8c8d'],
@@ -102,6 +143,12 @@ function Sidebar({
   };
 
   const selectedName = selectedRestaurant?.name ?? '请先在地图或列表中选择餐厅';
+  const currentMapItemName = selectedMapItem?.name ?? selectedName;
+
+  const handleAnalysisCenterChange = (value, option) => {
+    setAnalysisCenterId(value);
+    if (option?.item) onSelectMapItem(option.item);
+  };
 
   const searchPanel = (
     <>
@@ -110,7 +157,7 @@ function Sidebar({
           <SearchOutlined />
           <span>多条件检索</span>
         </div>
-        <Space direction="vertical" size={14} className="control-stack">
+        <Space orientation="vertical" size={14} className="control-stack">
           <Input
             placeholder="餐厅、地址或菜系"
             prefix={<SearchOutlined />}
@@ -219,11 +266,20 @@ function Sidebar({
           <RadiusSettingOutlined />
           <span>范围距离搜索</span>
         </div>
-        <Space direction="vertical" size={14} className="control-stack">
+        <Space orientation="vertical" size={14} className="control-stack">
           <div className="info-strip">
             <EnvironmentOutlined />
-            <span>{selectedName}</span>
+            <span>{currentMapItemName}</span>
           </div>
+          <Select
+            placeholder="选择地标或交通点作为中心"
+            allowClear
+            showSearch
+            value={analysisCenterId}
+            onChange={handleAnalysisCenterChange}
+            options={analysisCenterOptions}
+            optionFilterProp="label"
+          />
           <div className="slider-block">
             <div className="slider-label">
               <span>搜索半径</span>
@@ -259,8 +315,14 @@ function Sidebar({
         <SwapOutlined />
         <span>路径规划</span>
       </div>
-      <Space direction="vertical" size={14} className="control-stack">
-        <Input value={routeStart} onChange={(event) => setRouteStart(event.target.value)} prefix={<EnvironmentOutlined />} />
+      <Space orientation="vertical" size={14} className="control-stack">
+        <Select
+          value={routeStart}
+          onChange={setRouteStart}
+          options={routeStartOptions}
+          showSearch
+          optionFilterProp="label"
+        />
         <Input value={selectedRestaurant?.name ?? ''} placeholder="选择一个餐厅作为终点" prefix={<AimOutlined />} readOnly />
         <Select value={routeMode} onChange={setRouteMode} options={travelModes} />
         <div className="route-summary">
@@ -328,6 +390,11 @@ function Sidebar({
         <Statistic title="均分" value={stats.avgRating} />
         <Statistic title="人均" value={stats.avgPrice} prefix="¥" />
         <Statistic title="结果" value={stats.visible} suffix="家" />
+      </div>
+
+      <div className="layer-summary">
+        <span>地标 {landmarks.length}</span>
+        <span>交通 {transportations.length}</span>
       </div>
 
       <Tabs

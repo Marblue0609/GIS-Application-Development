@@ -13,13 +13,13 @@ createRoot(document.getElementById('root')).render(
       locale={zhCN}
       theme={{
         token: {
-          colorPrimary: '#e76f51',
-          colorSuccess: '#7aa95c',
-          colorWarning: '#f4a261',
-          colorText: '#332821',
-          colorTextSecondary: '#7b695f',
-          colorBgContainer: '#fffaf3',
-          colorBorder: '#ead8c7',
+          colorPrimary: '#ff6b4a',
+          colorSuccess: '#4fb36b',
+          colorWarning: '#ffb23f',
+          colorText: '#2f2a26',
+          colorTextSecondary: '#726a62',
+          colorBgContainer: '#fffdf8',
+          colorBorder: '#f0dfcf',
           borderRadius: 6,
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif',
         },

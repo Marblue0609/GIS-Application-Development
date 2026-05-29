@@ -1,14 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Layout } from 'antd';
 import CesiumMap from './components/CesiumMap';
 import Sidebar from './components/Sidebar';
 import { normalizeRestaurantFeature, restaurantMatchesFilters } from './services/restaurantData';
+import { normalizeLandmarkFeature, normalizeTransportationFeature } from './services/mapData';
 
 const { Content } = Layout;
 
 function App() {
   const [restaurants, setRestaurants] = useState([]);
+  const [landmarks, setLandmarks] = useState([]);
+  const [transportations, setTransportations] = useState([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [selectedMapItem, setSelectedMapItem] = useState(null);
   const [focusedRestaurantId, setFocusedRestaurantId] = useState(null);
   const [checklist, setChecklist] = useState([]);
   const [filters, setFilters] = useState({
@@ -20,9 +24,20 @@ function App() {
 
   useEffect(() => {
     const loadRestaurants = async () => {
-      const response = await fetch('/restaurants.geojson');
-      const geojson = await response.json();
-      setRestaurants(geojson.features.map(normalizeRestaurantFeature));
+      const [restaurantResponse, landmarkResponse, transportationResponse] = await Promise.all([
+        fetch('/restaurants.geojson'),
+        fetch('/landmarks.geojson'),
+        fetch('/transportations.geojson'),
+      ]);
+      const [restaurantGeojson, landmarkGeojson, transportationGeojson] = await Promise.all([
+        restaurantResponse.json(),
+        landmarkResponse.json(),
+        transportationResponse.json(),
+      ]);
+
+      setRestaurants(restaurantGeojson.features.map(normalizeRestaurantFeature));
+      setLandmarks(landmarkGeojson.features.map(normalizeLandmarkFeature));
+      setTransportations(transportationGeojson.features.map(normalizeTransportationFeature));
     };
 
     loadRestaurants().catch((error) => {
@@ -71,22 +86,33 @@ function App() {
       .sort((a, b) => b.value - a.value);
   }, [filteredRestaurants]);
 
-  const handleFocusRestaurant = (restaurant) => {
+  const handleFocusRestaurant = useCallback((restaurant) => {
     setSelectedRestaurant(restaurant);
+    setSelectedMapItem(restaurant);
     setFocusedRestaurantId(restaurant.id);
-  };
+  }, []);
 
-  const handleSaveRestaurant = (restaurant) => {
+  const handleFocusMapItem = useCallback((item) => {
+    setSelectedMapItem(item);
+    if (item?.layerType === 'restaurant') {
+      setSelectedRestaurant(item);
+      setFocusedRestaurantId(item.id);
+    } else {
+      setFocusedRestaurantId(item?.id ?? null);
+    }
+  }, []);
+
+  const handleSaveRestaurant = useCallback((restaurant) => {
     if (!restaurant) return;
     setChecklist((current) => {
       if (current.some((item) => item.id === restaurant.id)) return current;
       return [...current, restaurant];
     });
-  };
+  }, []);
 
-  const handleRemoveRestaurant = (restaurantId) => {
+  const handleRemoveRestaurant = useCallback((restaurantId) => {
     setChecklist((current) => current.filter((item) => item.id !== restaurantId));
-  };
+  }, []);
 
   return (
     <Layout className="app-shell">
@@ -95,19 +121,26 @@ function App() {
         filters={filters}
         onFiltersChange={setFilters}
         restaurants={filteredRestaurants}
+        landmarks={landmarks}
+        transportations={transportations}
         selectedRestaurant={selectedRestaurant}
+        selectedMapItem={selectedMapItem}
         stats={stats}
         categoryStats={categoryStats}
         checklist={checklist}
         onSelectRestaurant={handleFocusRestaurant}
         onSaveRestaurant={handleSaveRestaurant}
         onRemoveRestaurant={handleRemoveRestaurant}
+        onSelectMapItem={handleFocusMapItem}
       />
       <Content className="map-panel">
         <CesiumMap
           filteredIds={filteredIds}
           focusedRestaurantId={focusedRestaurantId}
+          landmarks={landmarks}
+          transportations={transportations}
           onSelectRestaurant={handleFocusRestaurant}
+          onSelectMapItem={handleFocusMapItem}
         />
       </Content>
     </Layout>
