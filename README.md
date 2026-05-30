@@ -12,3 +12,7 @@
 
 [ld-warning](./ld-data/ld-warning.md)
 
+如果服务器无法启动, 可以参考以下文档: 
+
+[scripts/README.md]
+
