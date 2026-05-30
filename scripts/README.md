@@ -112,3 +112,5 @@ restaurants imported
 transportations imported
 all geojson data imported
 ```
+
+然后就可以了; 
