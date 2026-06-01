@@ -78,20 +78,54 @@ const createPointEntity = (dataSource, item, color, size) => {
   return entity;
 };
 
+// 生成缓冲区圆的坐标点（经纬度），用于 Cesium 画 polygon
+// 在 WGS84 球面上按距离逐方位角采样
+const computeCirclePoints = (centerLng, centerLat, radiusMeters, segments = 72) => {
+  const R = 6371000;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const toDeg = (rad) => (rad * 180) / Math.PI;
+  const centerLatRad = toRad(centerLat);
+  const angularDist = radiusMeters / R;
+
+  const points = [];
+  for (let i = 0; i <= segments; i++) {
+    const bearing = (2 * Math.PI * i) / segments;
+    const latRad = Math.asin(
+      Math.sin(centerLatRad) * Math.cos(angularDist) +
+      Math.cos(centerLatRad) * Math.sin(angularDist) * Math.cos(bearing),
+    );
+    const lngRad =
+      toRad(centerLng) +
+      Math.atan2(
+        Math.sin(bearing) * Math.sin(angularDist) * Math.cos(centerLatRad),
+        Math.cos(angularDist) - Math.sin(centerLatRad) * Math.sin(latRad),
+      );
+    points.push(toDeg(lngRad), toDeg(latRad));
+  }
+  return points;
+};
+
 function CesiumMap({
   filteredIds,
   focusedRestaurantId,
   landmarks,
   transportations,
+  bufferInfo,
   onSelectRestaurant,
   onSelectMapItem,
 }) {
   const viewerRef = useRef(null);
   const dataSourceRef = useRef(null);
   const supportDataSourceRef = useRef(null);
+  const bufferEntityRef = useRef(null);
   const containerId = 'cesiumContainer';
   const [hoveredItem, setHoveredItem] = useState(null);
   const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
+
+  // 图例点击切换图层显隐
+  const [showRestaurant, setShowRestaurant] = useState(true);
+  const [showLandmark, setShowLandmark] = useState(true);
+  const [showTransportation, setShowTransportation] = useState(true);
 
   useEffect(() => {
     if (viewerRef.current) return; // 防止 React StrictMode 下重复初始化
@@ -210,29 +244,109 @@ function CesiumMap({
     viewer.dataSources.add(supportDataSource);
   }, [landmarks, transportations]);
 
+  // 绘制/更新缓冲区圆 + 中心 pin
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    // 清理旧的缓冲区实体（圆 + pin）
+    if (bufferEntityRef.current) {
+      viewer.entities.remove(bufferEntityRef.current);
+      bufferEntityRef.current = null;
+    }
+    // 也清理可能残留的旧 pin
+    const oldPins = viewer.entities.values.filter((e) => e.id && e.id.startsWith('buffer-center-'));
+    oldPins.forEach((e) => viewer.entities.remove(e));
+
+    if (!bufferInfo) return;
+
+    const { center, radius: radiusMeters } = bufferInfo;
+    const positions = computeCirclePoints(center.lng, center.lat, radiusMeters, 72);
+
+    bufferEntityRef.current = viewer.entities.add({
+      polygon: {
+        hierarchy: Cesium.Cartesian3.fromDegreesArray(positions),
+        material: Cesium.Color.fromCssColorString('#ff6b4a').withAlpha(0.14),
+        outline: true,
+        outlineColor: Cesium.Color.fromCssColorString('#ff6b4a').withAlpha(0.55),
+        outlineWidth: 2,
+      },
+    });
+
+    // 中心发光 Pin — 外层脉冲光环 + 内层实心点
+    viewer.entities.add({
+      id: 'buffer-center-ring',
+      position: Cesium.Cartesian3.fromDegrees(center.lng, center.lat),
+      ellipse: {
+        semiMinorAxis: 30,
+        semiMajorAxis: 30,
+        material: Cesium.Color.fromCssColorString('#ff6b4a').withAlpha(0.25),
+        outline: true,
+        outlineColor: Cesium.Color.fromCssColorString('#ff6b4a').withAlpha(0.6),
+        outlineWidth: 2,
+      },
+    });
+    viewer.entities.add({
+      id: 'buffer-center-dot',
+      position: Cesium.Cartesian3.fromDegrees(center.lng, center.lat),
+      point: {
+        pixelSize: 12,
+        color: Cesium.Color.fromCssColorString('#ff6b4a').withAlpha(1),
+        outlineColor: Cesium.Color.fromCssColorString('#fff7ec').withAlpha(1),
+        outlineWidth: 3,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      },
+    });
+    // 脉冲动画 — 用 EllipseGeometry 要求 semiMajor >= semiMinor，共享一个计算值确保一致
+    const pulseRadius = new Cesium.CallbackProperty(() => {
+      const phase = (Date.now() % 1500) / 1500;
+      return 20 + 30 * Math.sin(phase * Math.PI);
+    }, false);
+    viewer.entities.add({
+      id: 'buffer-center-pulse',
+      position: Cesium.Cartesian3.fromDegrees(center.lng, center.lat),
+      ellipse: {
+        semiMinorAxis: pulseRadius,
+        semiMajorAxis: pulseRadius,
+        material: Cesium.Color.fromCssColorString('#ff6b4a').withAlpha(0.18),
+        outline: false,
+      },
+    });
+  }, [bufferInfo]);
+
   useEffect(() => {
     const restaurantDataSource = dataSourceRef.current;
     const supportDataSource = supportDataSourceRef.current;
     if (!restaurantDataSource || !filteredIds) return;
 
+    // 缓冲区激活时：范围内不透明度 1，范围外半透明
+    const hasBuffer = bufferInfo && bufferInfo.nearbyIds.size > 0;
+    const outsideAlpha = 0.18;
+
     restaurantDataSource.entities.values.forEach((entity) => {
-      const isVisible = filteredIds.has(entity.id);
+      const isVisible = filteredIds.has(entity.id) && showRestaurant;
       const isSelected = entity.id === focusedRestaurantId;
       const isHovered = entity.id === hoveredItem?.id;
+      const isInBuffer = !hasBuffer || bufferInfo.nearbyIds.has(entity.id);
       entity.show = isVisible;
       if (entity.point) {
         entity.point.pixelSize = isSelected ? 18 : isHovered ? 13 : 9;
         entity.point.outlineWidth = isSelected ? 4 : isHovered ? 3 : 2;
         entity.point.color = isSelected
           ? selectedPointColor.withAlpha(1)
-          : entity.categoryColor.withAlpha(1);
+          : entity.categoryColor.withAlpha(isInBuffer ? 1 : outsideAlpha);
         entity.point.outlineColor = isSelected
           ? selectedOutlineColor.withAlpha(1)
-          : Cesium.Color.WHITE.withAlpha(isHovered ? 1 : 0.86);
+          : Cesium.Color.WHITE.withAlpha(isHovered ? 1 : isInBuffer ? 0.86 : 0.2);
       }
     });
 
     supportDataSource?.entities.values.forEach((entity) => {
+      const item = entity.mapItem;
+      const isLandmark = item?.layerType === 'landmark';
+      const layerVisible = isLandmark ? showLandmark : showTransportation;
+      entity.show = layerVisible;
+
       const isSelected = entity.id === focusedRestaurantId;
       const isHovered = entity.id === hoveredItem?.id;
       if (entity.point) {
@@ -246,7 +360,7 @@ function CesiumMap({
           : Cesium.Color.WHITE.withAlpha(0.86);
       }
     });
-  }, [filteredIds, focusedRestaurantId, hoveredItem]);
+  }, [filteredIds, focusedRestaurantId, hoveredItem, showRestaurant, showLandmark, showTransportation, bufferInfo]);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -292,9 +406,27 @@ function CesiumMap({
         </div>
       )}
       <div className="map-legend">
-        <span><i className="legend-rest" />餐厅</span>
-        <span><i className="legend-landmark" />地标</span>
-        <span><i className="legend-transport" />交通</span>
+        <span
+          className={showRestaurant ? '' : 'legend-off'}
+          onClick={() => setShowRestaurant((v) => !v)}
+          style={{ cursor: 'pointer' }}
+        >
+          <i className="legend-rest" />餐厅
+        </span>
+        <span
+          className={showLandmark ? '' : 'legend-off'}
+          onClick={() => setShowLandmark((v) => !v)}
+          style={{ cursor: 'pointer' }}
+        >
+          <i className="legend-landmark" />地标
+        </span>
+        <span
+          className={showTransportation ? '' : 'legend-off'}
+          onClick={() => setShowTransportation((v) => !v)}
+          style={{ cursor: 'pointer' }}
+        >
+          <i className="legend-transport" />交通
+        </span>
       </div>
     </div>
   );

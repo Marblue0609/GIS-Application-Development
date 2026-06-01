@@ -447,6 +447,15 @@ body {
   border-radius: 50%;
 }
 
+.map-legend .legend-off {
+  opacity: 0.36;
+  text-decoration: line-through;
+}
+
+.map-legend .legend-off i {
+  filter: grayscale(1);
+}
+
 @media (max-width: 900px) {
   .app-shell {
     flex-direction: column;
@@ -462,5 +471,115 @@ body {
 
   .map-panel {
     height: 48vh;
+  }
+}
+
+/* ========================================
+   盲盒揭示动画 — 高级感金色光扫 + 文字渐现
+   ======================================== */
+.reveal-overlay {
+  position: relative;
+  margin-top: 12px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #1a1a1c 0%, #2d2a28 40%, #1a1a1c 100%);
+  border: 1px solid rgba(212, 175, 115, 0.25);
+  box-shadow:
+    0 0 40px rgba(212, 175, 115, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  animation: revealIn 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.reveal-card {
+  position: relative;
+  padding: 28px 22px 22px;
+  text-align: center;
+  overflow: hidden;
+}
+
+/* 金色光泽扫过 — 从左到右一道窄光 */
+.reveal-card .reveal-shimmer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgba(255, 215, 150, 0.07) 40%,
+    rgba(255, 235, 190, 0.14) 42%,
+    rgba(255, 215, 150, 0.07) 44%,
+    transparent 46%
+  );
+  background-size: 200% 100%;
+  animation: shimmerSweep 1.8s ease-in-out infinite;
+}
+
+.reveal-card .reveal-content {
+  position: relative;
+  z-index: 2;
+}
+
+.reveal-card .reveal-subtitle {
+  color: rgba(212, 175, 115, 0.7);
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  animation: fadeUp 0.5s 0.1s both;
+}
+
+.reveal-card .reveal-name {
+  color: #f0e4c8;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 1.35;
+  margin-bottom: 14px;
+  animation: fadeUp 0.5s 0.25s both;
+}
+
+.reveal-card .reveal-meta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  color: rgba(220, 200, 165, 0.8);
+  font-size: 14px;
+  animation: fadeUp 0.5s 0.4s both;
+}
+
+.reveal-card .reveal-meta .ant-tag {
+  color: #d4af73;
+  background: rgba(212, 175, 115, 0.12);
+  border-color: rgba(212, 175, 115, 0.3);
+}
+
+@keyframes revealIn {
+  from {
+    opacity: 0;
+    transform: scaleY(0.6);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+    max-height: 200px;
+  }
+}
+
+@keyframes shimmerSweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

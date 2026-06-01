@@ -7,6 +7,19 @@ import { normalizeLandmarkFeature, normalizeTransportationFeature } from './serv
 
 const { Content } = Layout;
 
+// 打卡清单 localStorage Key，刷新页面不丢失
+const CHECKLIST_KEY = 'citytaste_checklist';
+
+// 从 localStorage 读取打卡清单初始值
+const loadChecklist = () => {
+  try {
+    const saved = localStorage.getItem(CHECKLIST_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+};
+
 function App() {
   const [restaurants, setRestaurants] = useState([]);
   const [landmarks, setLandmarks] = useState([]);
@@ -14,13 +27,19 @@ function App() {
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [selectedMapItem, setSelectedMapItem] = useState(null);
   const [focusedRestaurantId, setFocusedRestaurantId] = useState(null);
-  const [checklist, setChecklist] = useState([]);
+  const [checklist, setChecklist] = useState(loadChecklist);
+  const [bufferInfo, setBufferInfo] = useState(null); // { center: {lng, lat}, radius, nearbyIds: Set }
   const [filters, setFilters] = useState({
     keyword: '',
     category: null,
     priceRange: [0, 500],
     minRating: 0,
   });
+
+  // 打卡清单变化时自动同步到 localStorage
+  useEffect(() => {
+    localStorage.setItem(CHECKLIST_KEY, JSON.stringify(checklist));
+  }, [checklist]);
 
   useEffect(() => {
     const loadRestaurants = async () => {
@@ -128,6 +147,8 @@ function App() {
         stats={stats}
         categoryStats={categoryStats}
         checklist={checklist}
+        bufferInfo={bufferInfo}
+        onBufferChange={setBufferInfo}
         onSelectRestaurant={handleFocusRestaurant}
         onSaveRestaurant={handleSaveRestaurant}
         onRemoveRestaurant={handleRemoveRestaurant}
@@ -139,6 +160,7 @@ function App() {
           focusedRestaurantId={focusedRestaurantId}
           landmarks={landmarks}
           transportations={transportations}
+          bufferInfo={bufferInfo}
           onSelectRestaurant={handleFocusRestaurant}
           onSelectMapItem={handleFocusMapItem}
         />
