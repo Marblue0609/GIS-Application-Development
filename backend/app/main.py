@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 
-from backend.app.api.search import router as search_router
+from app.api.search import router as search_router
+from app.api.restaurants import router as restaurants_router
 
 app = FastAPI(
     title="CityTaste API",
@@ -29,6 +30,7 @@ app.add_middleware(
 )
 
 app.include_router(search_router)
+app.include_router(restaurants_router)
 
 
 @app.get("/", tags=["Root"])
