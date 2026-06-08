@@ -12,10 +12,12 @@ import {
   Statistic,
   Tabs,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd';
 import {
   AimOutlined,
+  ApiOutlined,
   CompassOutlined,
   DeleteOutlined,
   EnvironmentOutlined,
@@ -31,12 +33,14 @@ import {
 const { Sider } = Layout;
 const { Text, Title } = Typography;
 
+// 路线规划出行方式选项
 const travelModes = [
   { value: 'walking', label: '步行' },
   { value: 'bicycling', label: '骑行' },
   { value: 'driving', label: '驾车' },
 ];
 
+// 数组去重工具函数，按自定义 key 判断
 const uniqueBy = (items, getKey) => {
   const seen = new Set();
   return items.filter((item) => {
@@ -47,7 +51,21 @@ const uniqueBy = (items, getKey) => {
   });
 };
 
+// 格式化距离显示：>= 1000m 显示 km，否则显示 m
+const formatDistance = (distance) => {
+  if (!Number.isFinite(Number(distance))) return null;
+  if (distance >= 1000) return `${(distance / 1000).toFixed(1)} km`;
+  return `${Math.round(distance)} m`;
+};
+
+/**
+ * 侧栏主组件 — 搜索 / 分析 / 路线 / 清单四大 Tab。
+ *
+ * Props 由 App 统一管理数据流，Sidebar 只负责 UI 渲染和事件冒泡。
+ */
 function Sidebar({
+  analysisArea,
+  apiStatus,
   categories,
   filters,
   onFiltersChange,
@@ -63,56 +81,64 @@ function Sidebar({
   onSaveRestaurant,
   onRemoveRestaurant,
   onSelectMapItem,
+  onRadiusSearch,
 }) {
   const [radius, setRadius] = useState(1000);
   const [routeMode, setRouteMode] = useState('walking');
   const [routeStart, setRouteStart] = useState('当前位置');
   const [analysisCenterId, setAnalysisCenterId] = useState(null);
+  const [analysisCenter, setAnalysisCenter] = useState(null);
 
+  // 局部更新筛选条件（合并到当前 state）
   const updateFilters = (patch) => {
     onFiltersChange((current) => ({ ...current, ...patch }));
   };
 
+  // 菜系下拉选项
   const categoryOptions = categories.map((category) => ({
     value: category,
     label: category,
   }));
 
+  // 交通设施去重（同名同类型只显示一条）
   const uniqueTransportations = uniqueBy(
     transportations,
     (item) => `${item.name}-${item.category}`,
   );
 
+  // 范围搜索中心点选项：地标 + 交通设施（去重后取前 90 条）
   const analysisCenterOptions = [
     ...landmarks.map((item) => ({
       value: item.id,
       label: `地标 · ${item.name}`,
       item,
     })),
-    ...uniqueTransportations.slice(0, 80).map((item) => ({
+    ...uniqueTransportations.slice(0, 90).map((item) => ({
       value: item.id,
       label: `交通 · ${item.name}`,
       item,
     })),
   ];
 
+  // 路线起点选项：当前位置 + 交通设施名称列表
   const routeStartOptions = [
     { value: '当前位置', label: '当前位置' },
-    ...uniqueBy(uniqueTransportations, (item) => item.name).slice(0, 80).map((item) => ({
+    ...uniqueBy(uniqueTransportations, (item) => item.name).slice(0, 90).map((item) => ({
       value: item.name,
       label: item.name,
     })),
   ];
 
+  // ECharts 环形饼图（甜甜圈图）— 缓冲区菜系结构展示
   const bufferChartOption = useMemo(() => ({
-    color: ['#e76f51', '#f4a261', '#8ab17d', '#6d9dc5', '#b07aa1', '#7f8c8d'],
+    color: ['#dc5b3c', '#d9952e', '#4f9b6d', '#3b83bd', '#996bb2', '#6f7782'],
     tooltip: { trigger: 'item' },
     legend: {
       bottom: 0,
       left: 'center',
       itemWidth: 10,
       itemHeight: 10,
-      textStyle: { color: '#6b5f57', fontSize: 11 },
+      textStyle: { color: '#59615d', fontSize: 11 },
     },
     series: [
       {
@@ -121,18 +147,13 @@ function Sidebar({
         radius: ['42%', '68%'],
         center: ['50%', '43%'],
         avoidLabelOverlap: true,
-        label: { formatter: '{b}', color: '#3c342f', fontSize: 11 },
+        label: { formatter: '{b}', color: '#27302d', fontSize: 11 },
         data: categoryStats.slice(0, 6),
       },
     ],
   }), [categoryStats]);
 
-  const handleRandom = () => {
-    if (!restaurants.length) return;
-    const picked = restaurants[Math.floor(Math.random() * restaurants.length)];
-    onSelectRestaurant(picked);
-  };
-
+  // 重置筛选条件到默认值
   const resetFilters = () => {
     onFiltersChange({
       keyword: '',
@@ -142,13 +163,24 @@ function Sidebar({
     });
   };
 
-  const selectedName = selectedRestaurant?.name ?? '请先在地图或列表中选择餐厅';
-  const currentMapItemName = selectedMapItem?.name ?? selectedName;
+  // 盲盒推荐：从当前可见餐厅中随机选择一家
+  const handleRandom = () => {
+    if (!restaurants.length) return;
+    const picked = restaurants[Math.floor(Math.random() * restaurants.length)];
+    onSelectRestaurant(picked);
+  };
 
+  // 范围搜索中心点变更：更新中心点定位并选中对应地图实体
   const handleAnalysisCenterChange = (value, option) => {
     setAnalysisCenterId(value);
+    setAnalysisCenter(option?.item ?? null);
     if (option?.item) onSelectMapItem(option.item);
   };
+
+  const currentCenter = analysisCenter ?? selectedMapItem ?? selectedRestaurant;
+  const selectedName = selectedRestaurant?.name ?? '请先在地图或列表中选择餐厅';
+  const currentMapItemName = currentCenter?.name ?? selectedName;
+  const apiLabel = apiStatus === 'online' ? 'API 已连接' : apiStatus === 'checking' ? '连接中' : '本地数据';
 
   const searchPanel = (
     <>
@@ -200,7 +232,7 @@ function Sidebar({
           </div>
           <div className="action-row">
             <Button icon={<GiftOutlined />} onClick={handleRandom}>
-              随机
+              盲盒
             </Button>
             <Button icon={<AimOutlined />} onClick={resetFilters}>
               重置
@@ -225,7 +257,7 @@ function Sidebar({
             icon={<HeartOutlined />}
             onClick={() => onSaveRestaurant(selectedRestaurant)}
           >
-            保存想去
+            加入打卡清单
           </Button>
         </section>
       )}
@@ -237,7 +269,7 @@ function Sidebar({
         </div>
         <List
           className="restaurant-list"
-          dataSource={restaurants.slice(0, 80)}
+          dataSource={restaurants.slice(0, 120)}
           locale={{ emptyText: '没有匹配的餐厅' }}
           renderItem={(restaurant) => (
             <List.Item
@@ -250,7 +282,7 @@ function Sidebar({
               </div>
               <div className="restaurant-side">
                 <span><StarFilled /> {restaurant.rating || '-'}</span>
-                <Tag>{restaurant.category}</Tag>
+                <Tag>{formatDistance(restaurant.distanceM) ?? restaurant.category}</Tag>
               </div>
             </List.Item>
           )}
@@ -287,16 +319,26 @@ function Sidebar({
             </div>
             <Slider min={200} max={3000} step={100} value={radius} onChange={setRadius} />
           </div>
-          <Button type="primary" icon={<SearchOutlined />} disabled={!selectedRestaurant}>
+          <Button
+            type="primary"
+            icon={<SearchOutlined />}
+            disabled={!currentCenter}
+            onClick={() => onRadiusSearch(currentCenter, radius)}
+          >
             查询范围内餐厅
           </Button>
+          {analysisArea && (
+            <Text type="secondary">
+              当前地图已绘制 {analysisArea.radius} m 范围圈。
+            </Text>
+          )}
         </Space>
       </section>
 
       <section className="control-section">
         <div className="section-title">
           <AimOutlined />
-          <span>缓冲区分析</span>
+          <span>缓冲区菜系结构</span>
         </div>
         <div className="chart-card">
           {categoryStats.length ? (
@@ -313,7 +355,7 @@ function Sidebar({
     <section className="control-section">
       <div className="section-title">
         <SwapOutlined />
-        <span>路径规划</span>
+        <span>打卡路线预览</span>
       </div>
       <Space orientation="vertical" size={14} className="control-stack">
         <Select
@@ -323,17 +365,16 @@ function Sidebar({
           showSearch
           optionFilterProp="label"
         />
-        <Input value={selectedRestaurant?.name ?? ''} placeholder="选择一个餐厅作为终点" prefix={<AimOutlined />} readOnly />
         <Select value={routeMode} onChange={setRouteMode} options={travelModes} />
         <div className="route-summary">
-          <Statistic title="预计距离" value="--" suffix="km" />
-          <Statistic title="预计时间" value="--" suffix="min" />
+          <Statistic title="清单点位" value={checklist.length} suffix="个" />
+          <Statistic title="规划状态" value={checklist.length > 1 ? '已预览' : '待选择'} />
         </div>
-        <Button type="primary" icon={<SwapOutlined />} disabled={!selectedRestaurant}>
+        <Button type="primary" icon={<SwapOutlined />} disabled={checklist.length < 2}>
           生成路线
         </Button>
         <Text type="secondary">
-          后续接入 pgRouting 或第三方路径 API 后，这里展示路线距离、时间和地图路径。
+          当前先在 Cesium 中按清单顺序绘制折线预览；后端路线 API 完成后可替换为真实道路路径。
         </Text>
       </Space>
     </section>
@@ -365,11 +406,13 @@ function Sidebar({
               <Text strong>{restaurant.name}</Text>
               <Text type="secondary">{restaurant.address}</Text>
             </div>
-            <Button
-              type="text"
-              icon={<DeleteOutlined />}
-              onClick={() => onRemoveRestaurant(restaurant.id)}
-            />
+            <Tooltip title="移除">
+              <Button
+                type="text"
+                icon={<DeleteOutlined />}
+                onClick={() => onRemoveRestaurant(restaurant.id)}
+              />
+            </Tooltip>
           </List.Item>
         )}
       />
@@ -386,6 +429,11 @@ function Sidebar({
         </div>
       </div>
 
+      <div className={`api-pill ${apiStatus}`}>
+        <ApiOutlined />
+        <span>{apiLabel}</span>
+      </div>
+
       <div className="summary-grid">
         <Statistic title="均分" value={stats.avgRating} />
         <Statistic title="人均" value={stats.avgPrice} prefix="¥" />
@@ -395,6 +443,7 @@ function Sidebar({
       <div className="layer-summary">
         <span>地标 {landmarks.length}</span>
         <span>交通 {transportations.length}</span>
+        <span>总量 {stats.total}</span>
       </div>
 
       <Tabs

@@ -1,7 +1,7 @@
 * {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 html,
@@ -13,24 +13,24 @@ body,
 }
 
 body {
-  color: #2f2a26;
-  background: #f4efe7;
+  color: #26302c;
+  background: #eef2ed;
 }
 
 .app-shell {
   width: 100vw;
   height: 100vh;
-  background: #f4efe7;
+  background: #eef2ed;
 }
 
 .sidebar {
   height: 100vh;
-  padding: 22px 20px;
+  padding: 18px 18px 20px;
   overflow-y: auto;
-  color: #2f2a26;
-  background: #fffdf8 !important;
-  border-right: 1px solid #e5d4c2;
-  box-shadow: 14px 0 34px rgba(82, 55, 36, 0.18);
+  color: #26302c;
+  background: #fbfcfa !important;
+  border-right: 1px solid #d8e1dc;
+  box-shadow: 10px 0 28px rgba(38, 48, 44, 0.12);
 }
 
 .sidebar::-webkit-scrollbar,
@@ -40,27 +40,27 @@ body {
 
 .sidebar::-webkit-scrollbar-thumb,
 .restaurant-list::-webkit-scrollbar-thumb {
-  background: #e4b995;
+  background: #b8c9c0;
   border-radius: 8px;
 }
 
 .brand {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .brand-mark {
   display: grid;
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
   place-items: center;
-  color: #fffdf8;
-  background: #ff6b4a;
+  color: #ffffff;
+  background: #2f6f5e;
   border-radius: 7px;
-  box-shadow: 0 10px 20px rgba(255, 107, 74, 0.22);
+  box-shadow: 0 10px 22px rgba(47, 111, 94, 0.22);
 }
 
 .brand .ant-typography {
@@ -68,31 +68,55 @@ body {
 }
 
 .brand h3.ant-typography {
-  color: #2f2a26;
-  font-size: 25px;
+  color: #26302c;
+  font-size: 24px;
   line-height: 1.1;
   letter-spacing: 0;
+}
+
+.api-pill,
+.layer-summary {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  color: #596b63;
+  font-size: 12px;
+}
+
+.api-pill {
+  width: fit-content;
+  min-height: 28px;
+  padding: 5px 10px;
+  background: #eef7f3;
+  border: 1px solid #cbe3d7;
+  border-radius: 999px;
+}
+
+.api-pill.online {
+  color: #205e4d;
+  background: #e8f7f0;
+  border-color: #b7ddcd;
+}
+
+.api-pill.offline {
+  color: #7b5b21;
+  background: #fff8e6;
+  border-color: #ead39a;
 }
 
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  margin-bottom: 14px;
-}
-
-.layer-summary {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 14px;
-  color: #5f6964;
-  font-size: 12px;
+  margin-bottom: 12px;
 }
 
 .layer-summary span {
+  min-height: 26px;
   padding: 5px 9px;
-  background: #f1fbf3;
-  border: 1px solid #d9efdf;
+  background: #f3f6f5;
+  border: 1px solid #dfe7e3;
   border-radius: 999px;
 }
 
@@ -101,25 +125,25 @@ body {
 .selected-card,
 .result-section {
   background: #ffffff;
-  border: 1px solid #ead8c7;
+  border: 1px solid #dde6e1;
   border-radius: 8px;
-  box-shadow: 0 8px 20px rgba(118, 82, 57, 0.07);
+  box-shadow: 0 8px 18px rgba(47, 62, 56, 0.06);
 }
 
 .summary-grid .ant-statistic {
   min-width: 0;
-  padding: 11px;
+  padding: 10px;
 }
 
 .summary-grid .ant-statistic-title {
   margin-bottom: 4px;
-  color: #746d66;
+  color: #66766f;
   font-size: 12px;
 }
 
 .summary-grid .ant-statistic-content {
-  color: #2f2a26;
-  font-size: 19px;
+  color: #26302c;
+  font-size: 18px;
   line-height: 1.2;
 }
 
@@ -129,44 +153,43 @@ body {
 
 .feature-tabs .ant-tabs-tab {
   padding: 8px 0;
-  color: #726a62;
+  color: #607068;
 }
 
 .feature-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
-  color: #ff6b4a;
+  color: #2f6f5e;
   font-weight: 700;
 }
 
+.feature-tabs .ant-tabs-ink-bar {
+  background: #2f6f5e;
+}
+
 .feature-tabs .ant-tabs-nav::before {
-  border-bottom-color: #ead8c7;
+  border-bottom-color: #dde6e1;
 }
 
 .control-section,
 .selected-card,
 .result-section {
-  padding: 16px;
-  margin-bottom: 14px;
+  padding: 15px;
+  margin-bottom: 12px;
 }
 
 .section-title {
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-bottom: 14px;
-  color: #e55335;
+  margin-bottom: 13px;
+  color: #2f6f5e;
   font-size: 15px;
   font-weight: 800;
 }
 
 .control-stack,
 .control-stack .ant-select,
-.control-stack .ant-input-affix-wrapper,
-.control-stack .ant-input-number {
+.control-stack .ant-input-affix-wrapper {
   width: 100%;
-}
-
-.slider-block {
-  padding-top: 2px;
 }
 
 .slider-label,
@@ -180,12 +203,12 @@ body {
 
 .slider-label {
   margin-bottom: 4px;
-  color: #726a62;
+  color: #66766f;
   font-size: 13px;
 }
 
 .slider-label strong {
-  color: #2f2a26;
+  color: #26302c;
 }
 
 .action-row .ant-btn {
@@ -193,13 +216,13 @@ body {
 }
 
 .highlight-card {
-  border-color: #ffc4ab;
-  background: #fff7ef;
+  border-color: #bfded0;
+  background: #f3faf6;
 }
 
 .selected-card h4.ant-typography {
   margin: 6px 0 10px;
-  color: #2f2a26;
+  color: #26302c;
   font-size: 18px;
 }
 
@@ -208,18 +231,18 @@ body {
   gap: 6px;
   margin-top: 12px;
   margin-bottom: 14px;
-  color: #726a62;
+  color: #66766f;
   line-height: 1.55;
 }
 
 .meta-row {
   justify-content: flex-start;
-  color: #4f4b46;
+  color: #48554f;
 }
 
 .meta-row .anticon,
 .restaurant-side .anticon {
-  color: #ffb23f;
+  color: #d9952e;
 }
 
 .info-strip {
@@ -228,16 +251,16 @@ body {
   align-items: center;
   min-height: 40px;
   padding: 9px 11px;
-  color: #5c625d;
-  background: #fff8f0;
-  border: 1px solid #f0dfcf;
+  color: #53645c;
+  background: #f5f8f6;
+  border: 1px solid #dfe7e3;
   border-radius: 6px;
 }
 
 .chart-card {
   min-height: 240px;
   background: #ffffff;
-  border: 1px solid #f0dfcf;
+  border: 1px solid #dfe7e3;
   border-radius: 8px;
 }
 
@@ -249,13 +272,9 @@ body {
 
 .route-summary .ant-statistic {
   padding: 12px;
-  background: #fff8f0;
-  border: 1px solid #efddcc;
+  background: #f5f8f6;
+  border: 1px solid #dfe7e3;
   border-radius: 8px;
-}
-
-.result-section {
-  padding-bottom: 10px;
 }
 
 .restaurant-list {
@@ -265,16 +284,17 @@ body {
 }
 
 .restaurant-list .ant-list-item {
-  padding: 11px 10px;
+  min-height: 66px;
+  padding: 10px;
   cursor: pointer;
-  border-block-end: 1px solid #f2e4d5;
+  border-block-end: 1px solid #edf1ef;
   border-radius: 7px;
   transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 
 .restaurant-list .ant-list-item:hover,
 .restaurant-list .ant-list-item.active {
-  background: #fff5eb;
+  background: #f2f8f5;
 }
 
 .restaurant-list .ant-list-item:hover {
@@ -282,7 +302,7 @@ body {
 }
 
 .restaurant-list .ant-list-item.active {
-  border-color: #ff6b4a;
+  border-color: #2f6f5e;
 }
 
 .restaurant-main {
@@ -302,18 +322,18 @@ body {
   flex: 0 0 92px;
   gap: 6px;
   justify-items: end;
-  color: #4f4b46;
+  color: #48554f;
 }
 
 .restaurant-side .ant-tag,
 .meta-row .ant-tag {
-  max-width: 90px;
+  max-width: 94px;
   margin-inline-end: 0;
   overflow: hidden;
-  color: #df5538;
+  color: #2f6f5e;
   text-overflow: ellipsis;
-  background: #fff5eb;
-  border-color: #ffc4ab;
+  background: #eef7f3;
+  border-color: #cbe3d7;
 }
 
 .checklist-section .ant-btn {
@@ -326,23 +346,23 @@ body {
   width: 28px;
   height: 28px;
   place-items: center;
-  color: #fffdf8;
+  color: #ffffff;
   font-weight: 700;
-  background: #4fb36b;
+  background: #3b83bd;
   border-radius: 6px;
 }
 
 .map-panel {
   position: relative;
   min-width: 0;
-  background: #ece4d8;
+  background: #dfe5dc;
 }
 
 .cesium-map-wrap {
   position: relative;
   width: 100%;
   height: 100%;
-  background: #ece4d8;
+  background: #dfe5dc;
 }
 
 .cesium-map-wrap::after {
@@ -350,14 +370,10 @@ body {
   inset: 0;
   pointer-events: none;
   content: "";
-  background: rgba(255, 250, 242, 0.1);
+  background: rgba(255, 255, 255, 0.04);
 }
 
-#cesiumContainer {
-  width: 100%;
-  height: 100%;
-}
-
+#cesiumContainer,
 .cesium-viewer,
 .cesium-viewer-cesiumWidgetContainer,
 .cesium-widget,
@@ -379,12 +395,12 @@ body {
   max-width: 230px;
   gap: 3px;
   padding: 10px 12px;
-  color: #2f2a26;
+  color: #26302c;
   pointer-events: none;
-  background: rgba(255, 253, 248, 0.96);
-  border: 1px solid #ffc4ab;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #cbe3d7;
   border-radius: 8px;
-  box-shadow: 0 12px 26px rgba(104, 67, 46, 0.14);
+  box-shadow: 0 12px 26px rgba(38, 48, 44, 0.15);
 }
 
 .map-hover-card strong {
@@ -396,23 +412,23 @@ body {
 }
 
 .map-hover-card span {
-  color: #726a62;
+  color: #66766f;
   font-size: 12px;
 }
 
 .map-legend {
   position: absolute;
-  right: 18px;
   top: 18px;
+  right: 18px;
   z-index: 11;
   display: grid;
   gap: 7px;
   padding: 10px 12px;
-  color: #3b3732;
+  color: #26302c;
   background: rgba(255, 255, 255, 0.94);
-  border: 1px solid #e6d8c8;
+  border: 1px solid #dce5e0;
   border-radius: 8px;
-  box-shadow: 0 10px 24px rgba(80, 58, 43, 0.13);
+  box-shadow: 0 10px 24px rgba(38, 48, 44, 0.13);
 }
 
 .map-legend span {
@@ -427,24 +443,20 @@ body {
   flex: 0 0 12px;
   width: 12px;
   height: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
 }
 
 .legend-rest {
-  background: rgba(255, 107, 74, 0.62);
-  border: 2px solid #fff;
-  border-radius: 50%;
+  background: rgba(220, 91, 60, 0.72);
 }
 
 .legend-landmark {
-  background: #1f78d1;
-  border: 2px solid #fff;
-  border-radius: 50%;
+  background: #2f6fb3;
 }
 
 .legend-transport {
-  background: rgba(56, 163, 106, 0.65);
-  border: 2px solid #fff;
-  border-radius: 50%;
+  background: #2c9a5f;
 }
 
 @media (max-width: 900px) {
@@ -455,12 +467,12 @@ body {
   .sidebar {
     width: 100% !important;
     max-width: none !important;
-    height: 52vh;
+    height: 54vh;
     border-right: 0;
-    border-bottom: 1px solid #efd8bf;
+    border-bottom: 1px solid #d8e1dc;
   }
 
   .map-panel {
-    height: 48vh;
+    height: 46vh;
   }
 }
