@@ -340,6 +340,10 @@ body {
   margin-bottom: 8px;
 }
 
+.checklist-list .restaurant-item {
+  align-items: center;
+}
+
 .check-order {
   display: grid;
   flex: 0 0 28px;
@@ -350,6 +354,19 @@ body {
   font-weight: 700;
   background: #3b83bd;
   border-radius: 6px;
+}
+
+.check-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+
+.check-actions .ant-btn {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 0;
+  padding: 0;
 }
 
 .map-panel {

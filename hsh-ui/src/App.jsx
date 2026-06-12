@@ -183,6 +183,13 @@ function App() {
       .filter((point) => Number.isFinite(point.lng) && Number.isFinite(point.lat))
   ), [checklist]);
 
+  const routeDistanceM = useMemo(() => {
+    if (routePath.length < 2) return 0;
+    return routePath.slice(1).reduce((sum, point, index) => (
+      sum + distanceMeters(routePath[index], point)
+    ), 0);
+  }, [routePath]);
+
   // 选中餐厅（来自侧栏列表或地图点选）→ 高亮 + FlyTo
   const handleFocusRestaurant = useCallback((restaurant) => {
     setSelectedRestaurant(restaurant);
@@ -211,6 +218,18 @@ function App() {
   // 从清单移除
   const handleRemoveRestaurant = useCallback((restaurantId) => {
     setChecklist((current) => current.filter((item) => item.id !== restaurantId));
+  }, []);
+
+  const handleMoveChecklistItem = useCallback((restaurantId, direction) => {
+    setChecklist((current) => {
+      const index = current.findIndex((item) => item.id === restaurantId);
+      const targetIndex = index + direction;
+      if (index < 0 || targetIndex < 0 || targetIndex >= current.length) return current;
+
+      const next = [...current];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      return next;
+    });
   }, []);
 
   // 范围搜索：优先调后端 /api/restaurants/search?center_lon&center_lat&radius，
@@ -274,10 +293,12 @@ function App() {
         stats={stats}
         categoryStats={categoryStats}
         checklist={checklist}
+        routeDistanceM={routeDistanceM}
         analysisArea={analysisArea}
         onSelectRestaurant={handleFocusRestaurant}
         onSaveRestaurant={handleSaveRestaurant}
         onRemoveRestaurant={handleRemoveRestaurant}
+        onMoveChecklistItem={handleMoveChecklistItem}
         onSelectMapItem={handleFocusMapItem}
         onRadiusSearch={handleRadiusSearch}
       />

@@ -28,6 +28,8 @@ import {
   SearchOutlined,
   StarFilled,
   SwapOutlined,
+  ArrowDownOutlined,
+  ArrowUpOutlined,
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -77,9 +79,11 @@ function Sidebar({
   stats,
   categoryStats,
   checklist,
+  routeDistanceM,
   onSelectRestaurant,
   onSaveRestaurant,
   onRemoveRestaurant,
+  onMoveChecklistItem,
   onSelectMapItem,
   onRadiusSearch,
 }) {
@@ -181,6 +185,7 @@ function Sidebar({
   const selectedName = selectedRestaurant?.name ?? '请先在地图或列表中选择餐厅';
   const currentMapItemName = currentCenter?.name ?? selectedName;
   const apiLabel = apiStatus === 'online' ? 'API 已连接' : apiStatus === 'checking' ? '连接中' : '本地数据';
+  const routeDistanceText = formatDistance(routeDistanceM) ?? '--';
 
   const searchPanel = (
     <>
@@ -368,13 +373,13 @@ function Sidebar({
         <Select value={routeMode} onChange={setRouteMode} options={travelModes} />
         <div className="route-summary">
           <Statistic title="清单点位" value={checklist.length} suffix="个" />
-          <Statistic title="规划状态" value={checklist.length > 1 ? '已预览' : '待选择'} />
+          <Statistic title="直线距离" value={routeDistanceText} />
         </div>
         <Button type="primary" icon={<SwapOutlined />} disabled={checklist.length < 2}>
-          生成路线
+          预览清单路线
         </Button>
         <Text type="secondary">
-          当前先在 Cesium 中按清单顺序绘制折线预览；后端路线 API 完成后可替换为真实道路路径。
+          当前按清单顺序绘制直线预览，并估算点间距离；后端路线 API 完成后可替换为真实道路路径。
         </Text>
       </Space>
     </section>
@@ -406,13 +411,31 @@ function Sidebar({
               <Text strong>{restaurant.name}</Text>
               <Text type="secondary">{restaurant.address}</Text>
             </div>
-            <Tooltip title="移除">
-              <Button
-                type="text"
-                icon={<DeleteOutlined />}
-                onClick={() => onRemoveRestaurant(restaurant.id)}
-              />
-            </Tooltip>
+            <div className="check-actions">
+              <Tooltip title="上移">
+                <Button
+                  type="text"
+                  icon={<ArrowUpOutlined />}
+                  disabled={index === 0}
+                  onClick={() => onMoveChecklistItem(restaurant.id, -1)}
+                />
+              </Tooltip>
+              <Tooltip title="下移">
+                <Button
+                  type="text"
+                  icon={<ArrowDownOutlined />}
+                  disabled={index === checklist.length - 1}
+                  onClick={() => onMoveChecklistItem(restaurant.id, 1)}
+                />
+              </Tooltip>
+              <Tooltip title="移除">
+                <Button
+                  type="text"
+                  icon={<DeleteOutlined />}
+                  onClick={() => onRemoveRestaurant(restaurant.id)}
+                />
+              </Tooltip>
+            </div>
           </List.Item>
         )}
       />
