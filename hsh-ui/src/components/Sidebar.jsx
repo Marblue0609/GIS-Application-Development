@@ -30,6 +30,7 @@ import {
   SwapOutlined,
   ArrowDownOutlined,
   ArrowUpOutlined,
+  HomeOutlined,
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -66,6 +67,7 @@ const formatDistance = (distance) => {
  * Props 由 App 统一管理数据流，Sidebar 只负责 UI 渲染和事件冒泡。
  */
 function Sidebar({
+  activeFeature,
   analysisArea,
   apiStatus,
   categories,
@@ -80,6 +82,8 @@ function Sidebar({
   categoryStats,
   checklist,
   routeDistanceM,
+  onFeatureChange,
+  onGoHome,
   onSelectRestaurant,
   onSaveRestaurant,
   onRemoveRestaurant,
@@ -459,6 +463,10 @@ function Sidebar({
         </div>
       </div>
 
+      <Button className="home-return" icon={<HomeOutlined />} onClick={onGoHome}>
+        返回首页
+      </Button>
+
       <div className={`api-pill ${apiStatus}`}>
         <ApiOutlined />
         <span>{apiLabel}</span>
@@ -478,7 +486,8 @@ function Sidebar({
 
       <Tabs
         className="feature-tabs"
-        defaultActiveKey="search"
+        activeKey={activeFeature}
+        onChange={onFeatureChange}
         items={[
           { key: 'search', label: '搜索', children: searchPanel },
           { key: 'analysis', label: '分析', children: analysisPanel },

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Layout, message } from 'antd';
 import CesiumMap from './components/CesiumMap';
+import HomePage from './components/HomePage';
 import Sidebar from './components/Sidebar';
 import { normalizeRestaurantFeature, restaurantMatchesFilters } from './services/restaurantData';
 import { normalizeLandmarkFeature, normalizeTransportationFeature } from './services/mapData';
@@ -56,6 +57,8 @@ function App() {
   const [checklist, setChecklist] = useState([]);
   const [apiStatus, setApiStatus] = useState('checking');
   const [analysisArea, setAnalysisArea] = useState(null);
+  const [viewMode, setViewMode] = useState('home');
+  const [activeFeature, setActiveFeature] = useState('search');
   const [filters, setFilters] = useState({
     keyword: '',
     category: null,
@@ -278,9 +281,28 @@ function App() {
     message.success(`已在本地数据中找到 ${nearby.length} 家范围内餐厅`);
   }, [allRestaurants, apiStatus, filters]);
 
+  const handleEnterWorkspace = useCallback((feature = 'search') => {
+    setActiveFeature(feature);
+    setViewMode('workspace');
+  }, []);
+
+  if (viewMode === 'home') {
+    return (
+      <HomePage
+        apiStatus={apiStatus}
+        landmarks={landmarks}
+        restaurants={visibleRestaurants}
+        stats={stats}
+        transportations={transportations}
+        onEnterWorkspace={handleEnterWorkspace}
+      />
+    );
+  }
+
   return (
     <Layout className="app-shell">
       <Sidebar
+        activeFeature={activeFeature}
         apiStatus={apiStatus}
         categories={categories}
         filters={filters}
@@ -295,6 +317,8 @@ function App() {
         checklist={checklist}
         routeDistanceM={routeDistanceM}
         analysisArea={analysisArea}
+        onFeatureChange={setActiveFeature}
+        onGoHome={() => setViewMode('home')}
         onSelectRestaurant={handleFocusRestaurant}
         onSaveRestaurant={handleSaveRestaurant}
         onRemoveRestaurant={handleRemoveRestaurant}
