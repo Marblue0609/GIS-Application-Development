@@ -102,10 +102,13 @@ const createPointEntity = (dataSource, item, color, size) => {
  */
 function CesiumMap({
   analysisArea,
+  apiStatus,
   focusedRestaurantId,
   landmarks,
   restaurants,
   routePath,
+  selectedRestaurant,
+  stats,
   transportations,
   onSelectRestaurant,
   onSelectMapItem,
@@ -309,6 +312,23 @@ function CesiumMap({
   return (
     <div className="cesium-map-wrap">
       <div id={containerId} />
+      <div className="map-hud">
+        <div>
+          <strong>紫金港餐饮空间图层</strong>
+          <span>{apiStatus === 'online' ? 'FastAPI 数据源' : '本地 GeoJSON 数据源'}</span>
+        </div>
+        <div className="map-hud-metrics">
+          <span>{stats?.visible ?? restaurants.length} 家餐厅</span>
+          <span>{landmarks.length} 个地标</span>
+          <span>{transportations.length} 个交通点</span>
+        </div>
+        {selectedRestaurant && (
+          <div className="map-hud-focus">
+            <span>当前</span>
+            <strong>{selectedRestaurant.name}</strong>
+          </div>
+        )}
+      </div>
       {hoveredItem && (
         <div
           className="map-hover-card"

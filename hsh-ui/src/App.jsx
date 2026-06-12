@@ -305,10 +305,13 @@ function App() {
       <Content className="map-panel">
         <CesiumMap
           analysisArea={analysisArea}
+          apiStatus={apiStatus}
           focusedRestaurantId={focusedRestaurantId}
           landmarks={landmarks}
           restaurants={visibleRestaurants}
           routePath={routePath}
+          selectedRestaurant={selectedRestaurant}
+          stats={stats}
           transportations={transportations}
           onSelectRestaurant={handleFocusRestaurant}
           onSelectMapItem={handleFocusMapItem}

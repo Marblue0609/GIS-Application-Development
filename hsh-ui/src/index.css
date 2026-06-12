@@ -48,7 +48,9 @@ body {
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e5ece8;
 }
 
 .brand-mark {
@@ -67,9 +69,19 @@ body {
   margin: 0;
 }
 
+.brand-kicker.ant-typography {
+  display: block;
+  margin-bottom: 2px;
+  color: #6f8178;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .brand h3.ant-typography {
   color: #26302c;
-  font-size: 24px;
+  font-size: 25px;
   line-height: 1.1;
   letter-spacing: 0;
 }
@@ -217,7 +229,7 @@ body {
 
 .highlight-card {
   border-color: #bfded0;
-  background: #f3faf6;
+  background: linear-gradient(180deg, #f7fbf8 0%, #ffffff 100%);
 }
 
 .selected-card h4.ant-typography {
@@ -233,6 +245,28 @@ body {
   margin-bottom: 14px;
   color: #66766f;
   line-height: 1.55;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 7px 10px;
+  margin: 0 0 14px;
+  padding: 10px;
+  color: #66766f;
+  font-size: 12px;
+  background: #f5f8f6;
+  border: 1px solid #dfe7e3;
+  border-radius: 7px;
+}
+
+.detail-grid strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #26302c;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .meta-row {
@@ -404,6 +438,63 @@ body {
   display: none !important;
 }
 
+.map-hud {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 11;
+  display: grid;
+  min-width: 280px;
+  max-width: min(460px, calc(100% - 190px));
+  gap: 9px;
+  padding: 12px 14px;
+  color: #26302c;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(216, 225, 220, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(38, 48, 44, 0.13);
+  backdrop-filter: blur(10px);
+}
+
+.map-hud strong {
+  display: block;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-hud span {
+  color: #66766f;
+  font-size: 12px;
+}
+
+.map-hud-metrics,
+.map-hud-focus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.map-hud-metrics span {
+  padding: 4px 8px;
+  background: #f3f6f5;
+  border: 1px solid #dfe7e3;
+  border-radius: 999px;
+}
+
+.map-hud-focus {
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid #e8eeee;
+}
+
+.map-hud-focus strong {
+  max-width: 300px;
+  color: #2f6f5e;
+}
+
 .map-hover-card {
   position: absolute;
   z-index: 10;
@@ -491,5 +582,18 @@ body {
 
   .map-panel {
     height: 46vh;
+  }
+
+  .map-hud {
+    top: 10px;
+    left: 10px;
+    min-width: 0;
+    max-width: calc(100% - 20px);
+  }
+
+  .map-legend {
+    right: 10px;
+    top: auto;
+    bottom: 10px;
   }
 }

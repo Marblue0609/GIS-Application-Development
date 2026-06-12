@@ -256,6 +256,12 @@ function Sidebar({
             <span>¥{selectedRestaurant.price || '-'}</span>
           </div>
           <p><EnvironmentOutlined /> {selectedRestaurant.address}</p>
+          <div className="detail-grid">
+            <span>联系电话</span>
+            <strong>{selectedRestaurant.phone || '暂无'}</strong>
+            <span>数据坐标</span>
+            <strong>{selectedRestaurant.lng.toFixed(4)}, {selectedRestaurant.lat.toFixed(4)}</strong>
+          </div>
           <Button
             block
             type="primary"
@@ -447,8 +453,9 @@ function Sidebar({
       <div className="brand">
         <div className="brand-mark"><CompassOutlined /></div>
         <div>
+          <Text className="brand-kicker">GIS Food Analysis</Text>
           <Title level={3}>CityTaste</Title>
-          <Text>紫金港餐饮探索地图</Text>
+          <Text>紫金港餐饮空间分析</Text>
         </div>
       </div>
 
