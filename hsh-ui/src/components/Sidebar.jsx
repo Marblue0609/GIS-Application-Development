@@ -90,6 +90,8 @@ function Sidebar({
   onMoveChecklistItem,
   onSelectMapItem,
   onRadiusSearch,
+  onPlanRoute,
+  onRandomRestaurant,
 }) {
   const [radius, setRadius] = useState(1000);
   const [routeMode, setRouteMode] = useState('walking');
@@ -173,9 +175,7 @@ function Sidebar({
 
   // 盲盒推荐：从当前可见餐厅中随机选择一家
   const handleRandom = () => {
-    if (!restaurants.length) return;
-    const picked = restaurants[Math.floor(Math.random() * restaurants.length)];
-    onSelectRestaurant(picked);
+    onRandomRestaurant();
   };
 
   // 范围搜索中心点变更：更新中心点定位并选中对应地图实体
@@ -385,7 +385,12 @@ function Sidebar({
           <Statistic title="清单点位" value={checklist.length} suffix="个" />
           <Statistic title="直线距离" value={routeDistanceText} />
         </div>
-        <Button type="primary" icon={<SwapOutlined />} disabled={checklist.length < 2}>
+        <Button
+          type="primary"
+          icon={<SwapOutlined />}
+          disabled={checklist.length < 2}
+          onClick={() => onPlanRoute(routeMode)}
+        >
           预览清单路线
         </Button>
         <Text type="secondary">

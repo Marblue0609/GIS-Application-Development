@@ -5,7 +5,17 @@ import HomePage from './components/HomePage';
 import Sidebar from './components/Sidebar';
 import { normalizeRestaurantFeature, restaurantMatchesFilters } from './services/restaurantData';
 import { normalizeLandmarkFeature, normalizeTransportationFeature } from './services/mapData';
-import { ListRestaurants, SearchRestaurants, toSearchParams } from './services/restaurantService';
+import {
+  AddCheckListItem,
+  DeleteCheckListItem,
+  ListCheckList,
+  ListRestaurants,
+  PlanRoute,
+  RandomRestaurant,
+  SearchRestaurants,
+  UpdateCheckListItem,
+  toSearchParams,
+} from './services/restaurantService';
 
 const { Content } = Layout;
 
@@ -57,6 +67,7 @@ function App() {
   const [checklist, setChecklist] = useState([]);
   const [apiStatus, setApiStatus] = useState('checking');
   const [analysisArea, setAnalysisArea] = useState(null);
+  const [routePlan, setRoutePlan] = useState(null);
   const [viewMode, setViewMode] = useState('home');
   const [activeFeature, setActiveFeature] = useState('search');
   const [filters, setFilters] = useState({
@@ -117,6 +128,25 @@ function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (apiStatus !== 'online') return undefined;
+
+    let cancelled = false;
+    const loadChecklist = async () => {
+      try {
+        const items = await ListCheckList();
+        if (!cancelled) setChecklist(items);
+      } catch (error) {
+        console.warn('Check-list API unavailable, keeping local checklist mode.', error);
+      }
+    };
+
+    loadChecklist();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiStatus]);
 
   // Step 3: 筛选条件变化 → 后端搜索 or 本地过滤（260ms 防抖）
   useEffect(() => {
@@ -180,18 +210,25 @@ function App() {
   }, [visibleRestaurants]);
 
   // 打卡清单 → 坐标数组，供路线折线绘制（≥2 个点才画线）
-  const routePath = useMemo(() => (
-    checklist
+  const routePath = useMemo(() => {
+    if (routePlan?.path?.length > 1) {
+      return routePlan.path
+        .map(([lng, lat]) => ({ lng: Number(lng), lat: Number(lat) }))
+        .filter((point) => Number.isFinite(point.lng) && Number.isFinite(point.lat));
+    }
+
+    return checklist
       .map(getPoint)
-      .filter((point) => Number.isFinite(point.lng) && Number.isFinite(point.lat))
-  ), [checklist]);
+      .filter((point) => Number.isFinite(point.lng) && Number.isFinite(point.lat));
+  }, [checklist, routePlan]);
 
   const routeDistanceM = useMemo(() => {
+    if (Number.isFinite(Number(routePlan?.totalDistanceM))) return Number(routePlan.totalDistanceM);
     if (routePath.length < 2) return 0;
     return routePath.slice(1).reduce((sum, point, index) => (
       sum + distanceMeters(routePath[index], point)
     ), 0);
-  }, [routePath]);
+  }, [routePath, routePlan]);
 
   // 选中餐厅（来自侧栏列表或地图点选）→ 高亮 + FlyTo
   const handleFocusRestaurant = useCallback((restaurant) => {
@@ -210,30 +247,125 @@ function App() {
   }, []);
 
   // 加入打卡清单（去重）
-  const handleSaveRestaurant = useCallback((restaurant) => {
+  const handleSaveRestaurant = useCallback(async (restaurant) => {
     if (!restaurant) return;
+
+    if (apiStatus === 'online') {
+      try {
+        const saved = await AddCheckListItem(restaurant.id);
+        setChecklist((current) => {
+          if (current.some((item) => item.id === saved.id)) return current;
+          return [...current, saved].sort((a, b) => (a.checkOrder ?? 0) - (b.checkOrder ?? 0));
+        });
+        setRoutePlan(null);
+        message.success('已同步加入后端打卡清单');
+        return;
+      } catch (error) {
+        if (error?.response?.status === 409) {
+          message.info('该餐厅已在打卡清单中');
+          return;
+        }
+        console.warn('Add check-list API failed, using local checklist.', error);
+      }
+    }
+
     setChecklist((current) => {
       if (current.some((item) => item.id === restaurant.id)) return current;
       return [...current, restaurant];
     });
-  }, []);
+    setRoutePlan(null);
+  }, [apiStatus]);
 
   // 从清单移除
-  const handleRemoveRestaurant = useCallback((restaurantId) => {
+  const handleRemoveRestaurant = useCallback(async (restaurantId) => {
+    const target = checklist.find((item) => item.id === restaurantId);
+
+    if (apiStatus === 'online' && target?.checkId) {
+      try {
+        await DeleteCheckListItem(target.checkId);
+        setChecklist((current) => current.filter((item) => item.id !== restaurantId));
+        setRoutePlan(null);
+        message.success('已从后端打卡清单移除');
+        return;
+      } catch (error) {
+        console.warn('Delete check-list API failed, using local removal.', error);
+      }
+    }
+
     setChecklist((current) => current.filter((item) => item.id !== restaurantId));
-  }, []);
+    setRoutePlan(null);
+  }, [apiStatus, checklist]);
 
-  const handleMoveChecklistItem = useCallback((restaurantId, direction) => {
-    setChecklist((current) => {
-      const index = current.findIndex((item) => item.id === restaurantId);
-      const targetIndex = index + direction;
-      if (index < 0 || targetIndex < 0 || targetIndex >= current.length) return current;
+  const handleMoveChecklistItem = useCallback(async (restaurantId, direction) => {
+    const index = checklist.findIndex((item) => item.id === restaurantId);
+    const targetIndex = index + direction;
+    if (index < 0 || targetIndex < 0 || targetIndex >= checklist.length) return;
 
-      const next = [...current];
-      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
-      return next;
-    });
-  }, []);
+    const next = [...checklist];
+    [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+    const reordered = next.map((item, orderIndex) => ({ ...item, checkOrder: orderIndex + 1 }));
+    setChecklist(reordered);
+    setRoutePlan(null);
+
+    if (apiStatus === 'online') {
+      try {
+        await Promise.all(
+          reordered
+            .filter((item) => item.checkId)
+            .map((item) => UpdateCheckListItem(item.checkId, { check_order: item.checkOrder })),
+        );
+      } catch (error) {
+        console.warn('Update check-list order API failed, keeping local order.', error);
+      }
+    }
+  }, [apiStatus, checklist]);
+
+  // 随机盲盒：优先使用后端 /api/restaurants/random，失败时从当前可见列表本地随机。
+  const handleRandomRestaurant = useCallback(async () => {
+    if (apiStatus === 'online') {
+      try {
+        const { limit, offset, ...params } = toSearchParams(filters);
+        void limit;
+        void offset;
+        const picked = await RandomRestaurant(params);
+        if (picked) {
+          handleFocusRestaurant(picked);
+          message.success('已从后端随机推荐一家餐厅');
+          return;
+        }
+      } catch (error) {
+        console.warn('Random restaurant API failed, using local random.', error);
+      }
+    }
+
+    if (!visibleRestaurants.length) return;
+    const picked = visibleRestaurants[Math.floor(Math.random() * visibleRestaurants.length)];
+    handleFocusRestaurant(picked);
+  }, [apiStatus, filters, handleFocusRestaurant, visibleRestaurants]);
+
+  const handlePlanRoute = useCallback(async (travelMode) => {
+    if (apiStatus === 'online') {
+      try {
+        const plan = await PlanRoute({ travel_mode: travelMode });
+        setRoutePlan(plan);
+        if (plan.count < 2) {
+          message.warning(plan.message || '打卡清单不足两家餐厅，无法规划路线');
+        } else {
+          message.success('已获取后端路线规划结果');
+        }
+        return;
+      } catch (error) {
+        console.warn('Route plan API failed, using local straight-line route.', error);
+      }
+    }
+
+    if (checklist.length < 2) {
+      message.warning('打卡清单不足两家餐厅，无法预览路线');
+      return;
+    }
+    setRoutePlan(null);
+    message.info('当前使用本地直线距离预览');
+  }, [apiStatus, checklist.length]);
 
   // 范围搜索：优先调后端 /api/restaurants/search?center_lon&center_lat&radius，
   // 后端失败则本地 haversine 计算距离过滤，并标记 apiStatus 为 offline
@@ -323,6 +455,8 @@ function App() {
         onSaveRestaurant={handleSaveRestaurant}
         onRemoveRestaurant={handleRemoveRestaurant}
         onMoveChecklistItem={handleMoveChecklistItem}
+        onPlanRoute={handlePlanRoute}
+        onRandomRestaurant={handleRandomRestaurant}
         onSelectMapItem={handleFocusMapItem}
         onRadiusSearch={handleRadiusSearch}
       />

@@ -5,6 +5,7 @@ import api from './api';
  * 兼容 FastAPI 常见包装：{ data: { items: [...] } } 或 { items: [...] }
  */
 const unwrapItems = (payload) => payload?.data?.items ?? payload?.items ?? [];
+const unwrapData = (payload) => payload?.data ?? payload;
 
 /**
  * 将后端返回的餐厅记录标准化为前端统一格式。
@@ -33,6 +34,9 @@ const normalizeApiRestaurant = (item) => {
     displayLng: Number(item.displayLng ?? lng),
     displayLat: Number(item.displayLat ?? lat),
     distanceM: item.distanceM ?? item.distance_m ?? null,
+    checkId: item.checkId ?? item.check_id ?? null,
+    checkOrder: item.checkOrder ?? item.check_order ?? null,
+    note: item.note ?? null,
   };
 };
 
@@ -115,6 +119,29 @@ const RandomRestaurant = async (params) => {
   return normalizeApiRestaurant(response.data?.data ?? response.data);
 };
 
+const ListCheckList = async () => {
+  const response = await api.get('/check-list');
+  return unwrapItems(response.data).map(normalizeApiRestaurant).filter(Boolean);
+};
+
+const AddCheckListItem = async (restaurantId, note = null) => {
+  const response = await api.post('/check-list', {
+    restaurant_id: Number(restaurantId),
+    note,
+  });
+  return normalizeApiRestaurant(unwrapData(response.data));
+};
+
+const UpdateCheckListItem = async (checkId, payload) => {
+  const response = await api.put(`/check-list/${checkId}`, payload);
+  return normalizeApiRestaurant(unwrapData(response.data));
+};
+
+const DeleteCheckListItem = async (checkId) => {
+  const response = await api.delete(`/check-list/${checkId}`);
+  return unwrapData(response.data);
+};
+
 /**
  * 打卡路线规划（Week 3 / 后端接口预留）。
  * 调用 GET /api/route/plan，返回路线坐标 / 距离 / 耗时。
@@ -124,14 +151,18 @@ const RandomRestaurant = async (params) => {
  */
 const PlanRoute = async (params) => {
   const response = await api.get('/route/plan', { params });
-  return response.data;
+  return unwrapData(response.data);
 };
 
 export {
+  AddCheckListItem,
   BufferAnalysis,
+  DeleteCheckListItem,
+  ListCheckList,
   ListRestaurants,
   PlanRoute,
   RandomRestaurant,
   SearchRestaurants,
+  UpdateCheckListItem,
   toSearchParams,
 };
