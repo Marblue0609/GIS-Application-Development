@@ -7,7 +7,10 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 
 from app.api.search import router as search_router
+from app.api.recommend import router as recommend_router
 from app.api.restaurants import router as restaurants_router
+from app.api.checklist import router as checklist_router
+from app.api.route import router as route_router
 
 app = FastAPI(
     title="CityTaste API",
@@ -29,8 +32,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 注意顺序: /search 和 /random 都和 /{restaurant_id} 同前缀,
+# 必须在 restaurants_router 之前注册, 否则会被 /{restaurant_id} 抢路由.
 app.include_router(search_router)
+app.include_router(recommend_router)
 app.include_router(restaurants_router)
+app.include_router(checklist_router)
+app.include_router(route_router)
 
 
 @app.get("/", tags=["Root"])
