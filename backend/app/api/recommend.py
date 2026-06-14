@@ -36,7 +36,8 @@ def random_restaurant(
 
     示例:
         GET /api/restaurants/random
-        GET /api/restaurants/random?category=火锅&min_rating=4.0&max_price=100
+        GET /api/restaurants/random?category=火锅店&min_rating=4.0&max_price=100
+        (注意 category 是精确匹配, 要用数据库里的真实分类名, 如"火锅店"而非"火锅")
     """
     keyword_like = f"%{keyword}%" if keyword else None
 
