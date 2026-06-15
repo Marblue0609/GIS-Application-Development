@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     app_env: str = "dev"
     database_url: str = "postgresql://citytaste_user:123456@127.0.0.1:5432/citytaste"
 
+    # 高德 Web 服务 API key, 用于路线规划接口 (route.py). 不填则路线退回直线估算.
+    amap_key: str = ""
+
     # The urls that backend is allowed to access
     backend_cors_origins: str = (
         "http://localhost:5173,"
