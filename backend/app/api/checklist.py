@@ -88,7 +88,9 @@ def list_check_list(db: Session = Depends(get_db)):
     """
     rows = (
         db.execute(
-            text(_SELECT_WITH_RESTAURANT + " ORDER BY c.check_order ASC, c.check_id ASC")
+            text(
+                _SELECT_WITH_RESTAURANT + " ORDER BY c.check_order ASC, c.check_id ASC"
+            )
         )
         .mappings()
         .all()

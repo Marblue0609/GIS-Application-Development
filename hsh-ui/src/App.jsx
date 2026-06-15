@@ -7,6 +7,7 @@ import { normalizeRestaurantFeature, restaurantMatchesFilters } from './services
 import { normalizeLandmarkFeature, normalizeTransportationFeature } from './services/mapData';
 import {
   AddCheckListItem,
+  BufferAnalysis,
   DeleteCheckListItem,
   ListCheckList,
   ListRestaurants,
@@ -79,6 +80,7 @@ function App() {
   const [checklist, setChecklist] = useState([]);
   const [apiStatus, setApiStatus] = useState('checking');
   const [analysisArea, setAnalysisArea] = useState(null);
+  const [bufferStats, setBufferStats] = useState([]);
   const [routePlan, setRoutePlan] = useState(null);
   const [viewMode, setViewMode] = useState('home');
   const [activeFeature, setActiveFeature] = useState('search');
@@ -174,6 +176,7 @@ function App() {
         const result = await SearchRestaurants(toSearchParams(filters));
         setVisibleRestaurants(result.items);
         setAnalysisArea(null); // 筛选条件变了，清除上一个范围圈
+        setBufferStats([]);
       } catch (error) {
         setApiStatus('offline');
         setVisibleRestaurants(allRestaurants.filter((restaurant) => restaurantMatchesFilters(restaurant, filters)));
@@ -210,6 +213,8 @@ function App() {
 
   // ECharts 饼图数据：按当前可见餐厅的菜系统计
   const categoryStats = useMemo(() => {
+    if (bufferStats.length) return bufferStats;
+
     const categoryCount = visibleRestaurants.reduce((acc, restaurant) => {
       const name = restaurant.category || '其他';
       acc[name] = (acc[name] ?? 0) + 1;
@@ -219,7 +224,7 @@ function App() {
     return Object.entries(categoryCount)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
-  }, [visibleRestaurants]);
+  }, [bufferStats, visibleRestaurants]);
 
   // 打卡清单 → 坐标数组，供路线折线绘制（≥2 个点才画线）
   const routePath = useMemo(() => {
@@ -397,18 +402,19 @@ function App() {
 
     if (apiStatus === 'online') {
       try {
-        const result = await SearchRestaurants(toSearchParams(filters, {
-          center_lon: centerPoint.lng,
+        const result = await BufferAnalysis({
+          center_lng: centerPoint.lng,
           center_lat: centerPoint.lat,
           radius,
-          limit: 160,
-        }));
-        setVisibleRestaurants(result.items);
-        message.success(`已找到 ${result.items.length} 家范围内餐厅`);
+        });
+        const data = result.data ?? result;
+        setVisibleRestaurants(data.items ?? []);
+        setBufferStats(data.categoryStats ?? []);
+        message.success(`已完成缓冲区分析：${data.total ?? data.items?.length ?? 0} 家餐厅`);
         return;
       } catch (error) {
         setApiStatus('offline');
-        console.warn('Radius search API failed, using local distance calculation.', error);
+        console.warn('Buffer analysis API failed, using local distance calculation.', error);
       }
     }
 
@@ -422,6 +428,16 @@ function App() {
       .sort((a, b) => a.distanceM - b.distanceM);
 
     setVisibleRestaurants(nearby);
+    const categoryCount = nearby.reduce((acc, restaurant) => {
+      const name = restaurant.category || '其他';
+      acc[name] = (acc[name] ?? 0) + 1;
+      return acc;
+    }, {});
+    setBufferStats(
+      Object.entries(categoryCount)
+        .map(([name, value]) => ({ name, value, ratio: nearby.length ? value / nearby.length : 0 }))
+        .sort((a, b) => b.value - a.value),
+    );
     message.success(`已在本地数据中找到 ${nearby.length} 家范围内餐厅`);
   }, [allRestaurants, apiStatus, filters]);
 

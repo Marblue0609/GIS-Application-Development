@@ -60,14 +60,12 @@ def list_restaurants(
     """
     rows = (
         db.execute(
-            text(
-                f"""
+            text(f"""
                 SELECT {RESTAURANT_COLUMNS}
                 FROM restaurants
                 ORDER BY restaurant_id
                 LIMIT :limit OFFSET :offset
-                """
-            ),
+                """),
             {"limit": limit, "offset": offset},
         )
         .mappings()
@@ -98,13 +96,11 @@ def get_restaurant(restaurant_id: int, db: Session = Depends(get_db)):
     """
     row = (
         db.execute(
-            text(
-                f"""
+            text(f"""
                 SELECT {RESTAURANT_COLUMNS}
                 FROM restaurants
                 WHERE restaurant_id = :restaurant_id
-                """
-            ),
+                """),
             {"restaurant_id": restaurant_id},
         )
         .mappings()

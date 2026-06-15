@@ -41,9 +41,9 @@ AMAP_DIRECTION_URL = {
 
 # 兜底估算用的平均速度 (米/秒), 仅在没配 key / 高德调用失败时使用
 FALLBACK_SPEED_MPS = {
-    "walking": 1.3,    # 步行 ~4.7 km/h
+    "walking": 1.3,  # 步行 ~4.7 km/h
     "bicycling": 4.0,  # 骑行 ~14 km/h
-    "driving": 11.0,   # 驾车 ~40 km/h (城区)
+    "driving": 11.0,  # 驾车 ~40 km/h (城区)
 }
 
 # 高德是国内服务, 强制直连、不走系统代理.
@@ -137,9 +137,7 @@ def plan_route(travel_mode: str = "walking", db: Session = Depends(get_db)):
             detail=f"travel_mode 只支持 {list(AMAP_DIRECTION_URL)}",
         )
 
-    rows = (
-        db.execute(
-            text("""
+    rows = db.execute(text("""
                 SELECT c.check_order,
                        r.restaurant_id,
                        r.restaurant_name,
@@ -148,11 +146,7 @@ def plan_route(travel_mode: str = "walking", db: Session = Depends(get_db)):
                 FROM check_list c
                 JOIN restaurants r ON r.restaurant_id = c.restaurant_id
                 ORDER BY c.check_order ASC, c.check_id ASC
-            """)
-        )
-        .mappings()
-        .all()
-    )
+            """)).mappings().all()
 
     waypoints = [
         {
