@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Layout, message } from 'antd';
+import { ConfigProvider, Layout, message } from 'antd';
 import CesiumMap from './components/CesiumMap';
 import HomePage from './components/HomePage';
 import Sidebar from './components/Sidebar';
@@ -18,6 +18,18 @@ import {
 } from './services/restaurantService';
 
 const { Content } = Layout;
+
+const appTheme = {
+  token: {
+    colorPrimary: '#ff6b4a',
+    colorInfo: '#3b83bd',
+    colorSuccess: '#4fb36b',
+    colorWarning: '#d9952e',
+    colorText: '#2f2a26',
+    colorBgLayout: '#f4efe7',
+    borderRadius: 8,
+  },
+};
 
 /**
  * 从标准化点位对象中提取 WGS84 经纬度。
@@ -420,62 +432,68 @@ function App() {
 
   if (viewMode === 'home') {
     return (
-      <HomePage
-        apiStatus={apiStatus}
-        landmarks={landmarks}
-        restaurants={visibleRestaurants}
-        stats={stats}
-        transportations={transportations}
-        onEnterWorkspace={handleEnterWorkspace}
-      />
+      <ConfigProvider theme={appTheme}>
+        <HomePage
+          apiStatus={apiStatus}
+          landmarks={landmarks}
+          restaurants={visibleRestaurants}
+          stats={stats}
+          transportations={transportations}
+          onEnterWorkspace={handleEnterWorkspace}
+        />
+      </ConfigProvider>
     );
   }
 
   return (
-    <Layout className="app-shell">
-      <Sidebar
-        activeFeature={activeFeature}
-        apiStatus={apiStatus}
-        categories={categories}
-        filters={filters}
-        onFiltersChange={setFilters}
-        restaurants={visibleRestaurants}
-        landmarks={landmarks}
-        transportations={transportations}
-        selectedRestaurant={selectedRestaurant}
-        selectedMapItem={selectedMapItem}
-        stats={stats}
-        categoryStats={categoryStats}
+    <ConfigProvider theme={appTheme}>
+      <Layout className="app-shell">
+        <Sidebar
+          activeFeature={activeFeature}
+          apiStatus={apiStatus}
+          categories={categories}
+          filters={filters}
+          onFiltersChange={setFilters}
+          restaurants={visibleRestaurants}
+          landmarks={landmarks}
+          transportations={transportations}
+          selectedRestaurant={selectedRestaurant}
+          selectedMapItem={selectedMapItem}
+          stats={stats}
+          categoryStats={categoryStats}
         checklist={checklist}
         routeDistanceM={routeDistanceM}
+        routeMethod={routePlan?.method}
+        routeNote={routePlan?.note}
         analysisArea={analysisArea}
-        onFeatureChange={setActiveFeature}
-        onGoHome={() => setViewMode('home')}
-        onSelectRestaurant={handleFocusRestaurant}
-        onSaveRestaurant={handleSaveRestaurant}
-        onRemoveRestaurant={handleRemoveRestaurant}
-        onMoveChecklistItem={handleMoveChecklistItem}
-        onPlanRoute={handlePlanRoute}
-        onRandomRestaurant={handleRandomRestaurant}
-        onSelectMapItem={handleFocusMapItem}
-        onRadiusSearch={handleRadiusSearch}
-      />
-      <Content className="map-panel">
-        <CesiumMap
-          analysisArea={analysisArea}
-          apiStatus={apiStatus}
-          focusedRestaurantId={focusedRestaurantId}
-          landmarks={landmarks}
-          restaurants={visibleRestaurants}
-          routePath={routePath}
-          selectedRestaurant={selectedRestaurant}
-          stats={stats}
-          transportations={transportations}
+          onFeatureChange={setActiveFeature}
+          onGoHome={() => setViewMode('home')}
           onSelectRestaurant={handleFocusRestaurant}
+          onSaveRestaurant={handleSaveRestaurant}
+          onRemoveRestaurant={handleRemoveRestaurant}
+          onMoveChecklistItem={handleMoveChecklistItem}
+          onPlanRoute={handlePlanRoute}
+          onRandomRestaurant={handleRandomRestaurant}
           onSelectMapItem={handleFocusMapItem}
+          onRadiusSearch={handleRadiusSearch}
         />
-      </Content>
-    </Layout>
+        <Content className="map-panel">
+          <CesiumMap
+            analysisArea={analysisArea}
+            apiStatus={apiStatus}
+            focusedRestaurantId={focusedRestaurantId}
+            landmarks={landmarks}
+            restaurants={visibleRestaurants}
+            routePath={routePath}
+            selectedRestaurant={selectedRestaurant}
+            stats={stats}
+            transportations={transportations}
+            onSelectRestaurant={handleFocusRestaurant}
+            onSelectMapItem={handleFocusMapItem}
+          />
+        </Content>
+      </Layout>
+    </ConfigProvider>
   );
 }
 

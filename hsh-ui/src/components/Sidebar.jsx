@@ -56,6 +56,7 @@ const uniqueBy = (items, getKey) => {
 
 // 格式化距离显示：>= 1000m 显示 km，否则显示 m
 const formatDistance = (distance) => {
+  if (distance === null || distance === undefined || distance === '') return null;
   if (!Number.isFinite(Number(distance))) return null;
   if (distance >= 1000) return `${(distance / 1000).toFixed(1)} km`;
   return `${Math.round(distance)} m`;
@@ -82,6 +83,8 @@ function Sidebar({
   categoryStats,
   checklist,
   routeDistanceM,
+  routeMethod,
+  routeNote,
   onFeatureChange,
   onGoHome,
   onSelectRestaurant,
@@ -190,6 +193,14 @@ function Sidebar({
   const currentMapItemName = currentCenter?.name ?? selectedName;
   const apiLabel = apiStatus === 'online' ? 'API 已连接' : apiStatus === 'checking' ? '连接中' : '本地数据';
   const routeDistanceText = formatDistance(routeDistanceM) ?? '--';
+  const routeMethodLabel = routeMethod === 'amap'
+    ? '高德路网'
+    : routeMethod === 'straight_line'
+      ? '直线兜底'
+      : routeMethod === 'none'
+        ? '未成线'
+        : '待规划';
+  const routeDistanceTitle = routeMethod === 'amap' ? '路网距离' : '预估距离';
 
   const searchPanel = (
     <>
@@ -383,7 +394,11 @@ function Sidebar({
         <Select value={routeMode} onChange={setRouteMode} options={travelModes} />
         <div className="route-summary">
           <Statistic title="清单点位" value={checklist.length} suffix="个" />
-          <Statistic title="直线距离" value={routeDistanceText} />
+          <Statistic title={routeDistanceTitle} value={routeDistanceText} />
+        </div>
+        <div className={`route-method ${routeMethod ?? 'pending'}`}>
+          <span>{routeMethodLabel}</span>
+          {routeNote && <Text type="secondary">{routeNote}</Text>}
         </div>
         <Button
           type="primary"
@@ -394,7 +409,7 @@ function Sidebar({
           预览清单路线
         </Button>
         <Text type="secondary">
-          当前按清单顺序绘制直线预览，并估算点间距离；后端路线 API 完成后可替换为真实道路路径。
+          后端配置 AMAP_KEY 后返回高德真实路网；未配置或调用失败时，自动退回直线估算，前端按返回 path 绘制。
         </Text>
       </Space>
     </section>
