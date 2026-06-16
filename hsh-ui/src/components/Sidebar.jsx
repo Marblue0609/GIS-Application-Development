@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
   Button,
@@ -6,6 +6,7 @@ import {
   Input,
   Layout,
   List,
+  message,
   Select,
   Slider,
   Space,
@@ -47,6 +48,19 @@ const uniqueBy = (items, getKey) => {
   });
 };
 
+// Haversine 公式计算两点间距离（米）
+// 用于客户端范围距离搜索，不依赖后端 API
+const haversineDistance = (lng1, lat1, lng2, lat2) => {
+  const R = 6371000;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
 function Sidebar({
   categories,
   filters,
@@ -59,6 +73,8 @@ function Sidebar({
   stats,
   categoryStats,
   checklist,
+  bufferInfo,
+  onBufferChange,
   onSelectRestaurant,
   onSaveRestaurant,
   onRemoveRestaurant,
@@ -68,6 +84,28 @@ function Sidebar({
   const [routeMode, setRouteMode] = useState('walking');
   const [routeStart, setRouteStart] = useState('当前位置');
   const [analysisCenterId, setAnalysisCenterId] = useState(null);
+  const [bufferResult, setBufferResult] = useState(null);
+  const [sortBy, setSortBy] = useState('relevance');
+  const [isRevealing, setIsRevealing] = useState(false);
+  const [revealRestaurant, setRevealRestaurant] = useState(null);
+
+  // 搜索结果列表容器 ref，用于自动滚动到选中项
+  const searchListRef = useRef(null);
+
+  // 结果列表中选中餐厅时自动滚动到该项
+  const prevSelectedIdRef = useRef(null);
+  useEffect(() => {
+    if (selectedRestaurant?.id === prevSelectedIdRef.current) return;
+    prevSelectedIdRef.current = selectedRestaurant?.id;
+    if (!selectedRestaurant) return;
+    // 延迟一帧，等 render 完成再滚动
+    requestAnimationFrame(() => {
+      const activeEl = searchListRef.current?.querySelector('.restaurant-item.active');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  }, [selectedRestaurant, restaurants]);
 
   const updateFilters = (patch) => {
     onFiltersChange((current) => ({ ...current, ...patch }));
@@ -104,6 +142,19 @@ function Sidebar({
     })),
   ];
 
+  // 饼图数据来源：有缓冲分析结果优先用缓冲区结果，否则用全局筛选结果
+  const pieChartData = useMemo(() => {
+    const source = bufferResult ?? categoryStats;
+    return source.slice(0, 6);
+  }, [bufferResult, categoryStats]);
+
+  // 饼图扇区点击 → 自动联动菜系筛选
+  const handlePieClick = (params) => {
+    if (!params?.name) return;
+    updateFilters({ category: params.name === filters.category ? null : params.name });
+    message.info(params.name === filters.category ? '已取消菜系筛选' : `已筛选「${params.name}」`);
+  };
+
   const bufferChartOption = useMemo(() => ({
     color: ['#e76f51', '#f4a261', '#8ab17d', '#6d9dc5', '#b07aa1', '#7f8c8d'],
     tooltip: { trigger: 'item' },
@@ -122,15 +173,42 @@ function Sidebar({
         center: ['50%', '43%'],
         avoidLabelOverlap: true,
         label: { formatter: '{b}', color: '#3c342f', fontSize: 11 },
-        data: categoryStats.slice(0, 6),
+        data: pieChartData,
+        emphasis: {
+          label: { fontSize: 14, fontWeight: 'bold' },
+          scaleSize: 8,
+        },
+        selectedMode: 'single',
+        selectedOffset: 8,
       },
     ],
-  }), [categoryStats]);
+  }), [pieChartData]);
+
+  // 排序后的餐厅列表
+  const sortedRestaurants = useMemo(() => {
+    const list = [...restaurants];
+    switch (sortBy) {
+      case 'rating-desc': return list.sort((a, b) => b.rating - a.rating);
+      case 'rating-asc': return list.sort((a, b) => a.rating - b.rating);
+      case 'price-desc': return list.sort((a, b) => b.price - a.price);
+      case 'price-asc': return list.sort((a, b) => a.price - b.price);
+      case 'name': return list.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'));
+      default: return list; // relevance = 默认按原始顺序
+    }
+  }, [restaurants, sortBy]);
 
   const handleRandom = () => {
     if (!restaurants.length) return;
     const picked = restaurants[Math.floor(Math.random() * restaurants.length)];
-    onSelectRestaurant(picked);
+    // 盲盒揭示：先触发动画，动画结束再选中
+    setIsRevealing(true);
+    setRevealRestaurant(picked);
+    // 1.5s 后动画结束，选中餐厅
+    setTimeout(() => {
+      setIsRevealing(false);
+      setRevealRestaurant(null);
+      onSelectRestaurant(picked);
+    }, 1600);
   };
 
   const resetFilters = () => {
@@ -142,12 +220,56 @@ function Sidebar({
     });
   };
 
-  const selectedName = selectedRestaurant?.name ?? '请先在地图或列表中选择餐厅';
-  const currentMapItemName = selectedMapItem?.name ?? selectedName;
+  // 从清单点击餐厅 → 清除筛选并飞行定位（确保地图上可见）
+  const handleChecklistSelect = (restaurant) => {
+    resetFilters();
+    onSelectRestaurant(restaurant);
+  };
+
+  const currentMapItemName = selectedMapItem?.name ?? selectedRestaurant?.name ?? '请先在地图或列表中选择餐厅';
 
   const handleAnalysisCenterChange = (value, option) => {
     setAnalysisCenterId(value);
     if (option?.item) onSelectMapItem(option.item);
+  };
+
+  // 客户端范围距离搜索 + 缓冲区分析
+  // 选中地图项后，以其坐标为中心，计算半径内所有筛选结果中的餐厅
+  const handleBufferSearch = () => {
+    const center = selectedMapItem;
+    if (!center) return;
+    const centerLng = center.displayLng ?? center.lng;
+    const centerLat = center.displayLat ?? center.lat;
+
+    // 根据当前筛选条件 + 空间距离筛选
+    const nearby = restaurants.filter((r) => {
+      const rLng = r.displayLng ?? r.lng;
+      const rLat = r.displayLat ?? r.lat;
+      return haversineDistance(centerLng, centerLat, rLng, rLat) <= radius;
+    });
+
+    // 统计缓冲区内菜系分布
+    const catCount = nearby.reduce((acc, r) => {
+      acc[r.category] = (acc[r.category] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    const stats = Object.entries(catCount)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    setBufferResult(stats);
+
+    // 同步到 App 状态，驱动 Cesium 画圆 + 高亮
+    onBufferChange({
+      center: { lng: centerLng, lat: centerLat },
+      radius,
+      nearbyIds: new Set(nearby.map((r) => r.id)),
+    });
+
+    message.success(
+      `在「${center.name ?? '选中点'}」周边 ${radius}m 内找到 ${nearby.length} 家餐厅`,
+    );
   };
 
   const searchPanel = (
@@ -234,10 +356,30 @@ function Sidebar({
         <div className="section-title">
           <EnvironmentOutlined />
           <span>结果列表</span>
+          {restaurants.length > 0 && (
+            <span style={{ marginLeft: 'auto', color: '#a39b94', fontSize: 12 }}>
+              共 {restaurants.length} 家
+            </span>
+          )}
         </div>
+        <Select
+          size="small"
+          value={sortBy}
+          onChange={setSortBy}
+          style={{ width: '100%', marginBottom: 10 }}
+          options={[
+            { value: 'relevance', label: '默认排序' },
+            { value: 'rating-desc', label: '评分从高到低' },
+            { value: 'rating-asc', label: '评分从低到高' },
+            { value: 'price-desc', label: '价格从高到低' },
+            { value: 'price-asc', label: '价格从低到高' },
+            { value: 'name', label: '按名称排序' },
+          ]}
+        />
+        <div ref={searchListRef}>
         <List
           className="restaurant-list"
-          dataSource={restaurants.slice(0, 80)}
+          dataSource={sortedRestaurants.slice(0, 80)}
           locale={{ emptyText: '没有匹配的餐厅' }}
           renderItem={(restaurant) => (
             <List.Item
@@ -255,7 +397,26 @@ function Sidebar({
             </List.Item>
           )}
         />
+        </div>
       </section>
+
+      {/* 盲盒揭示覆盖层 — 高级感金色光扫 + 文字渐现 */}
+      {isRevealing && revealRestaurant && (
+        <div className="reveal-overlay">
+          <div className="reveal-card">
+            <div className="reveal-shimmer" />
+            <div className="reveal-content">
+              <div className="reveal-subtitle">为你发现</div>
+              <div className="reveal-name">{revealRestaurant.name}</div>
+              <div className="reveal-meta">
+                <Tag>{revealRestaurant.category}</Tag>
+                <span><StarFilled style={{ color: '#ffb23f' }} /> {revealRestaurant.rating || '-'}</span>
+                <span>¥{revealRestaurant.price || '-'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 
@@ -287,9 +448,14 @@ function Sidebar({
             </div>
             <Slider min={200} max={3000} step={100} value={radius} onChange={setRadius} />
           </div>
-          <Button type="primary" icon={<SearchOutlined />} disabled={!selectedRestaurant}>
+          <Button type="primary" icon={<SearchOutlined />} disabled={!selectedMapItem} onClick={handleBufferSearch}>
             查询范围内餐厅
           </Button>
+          {bufferInfo && (
+            <Button icon={<DeleteOutlined />} onClick={() => { onBufferChange(null); setBufferResult(null); }}>
+              清除缓冲区
+            </Button>
+          )}
         </Space>
       </section>
 
@@ -299,10 +465,14 @@ function Sidebar({
           <span>缓冲区分析</span>
         </div>
         <div className="chart-card">
-          {categoryStats.length ? (
-            <ReactECharts option={bufferChartOption} style={{ height: 240 }} />
+          {pieChartData.length ? (
+            <ReactECharts
+              option={bufferChartOption}
+              style={{ height: 240 }}
+              onEvents={{ click: handlePieClick }}
+            />
           ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="等待分析结果" />
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="选择中心点并搜索" />
           )}
         </div>
       </section>
@@ -361,7 +531,7 @@ function Sidebar({
         renderItem={(restaurant, index) => (
           <List.Item className="restaurant-item">
             <div className="check-order">{index + 1}</div>
-            <div className="restaurant-main" onClick={() => onSelectRestaurant(restaurant)}>
+            <div className="restaurant-main" onClick={() => handleChecklistSelect(restaurant)}>
               <Text strong>{restaurant.name}</Text>
               <Text type="secondary">{restaurant.address}</Text>
             </div>
