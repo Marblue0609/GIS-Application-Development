@@ -258,9 +258,22 @@ function CesiumMap({
       });
     }
 
+    if (selectedRestaurant) {
+      const selectedEntity = createPointEntity(
+        overlay,
+        selectedRestaurant,
+        selectedPointColor.withAlpha(1),
+        20,
+      );
+      if (selectedEntity?.point) {
+        selectedEntity.point.outlineColor = selectedOutlineColor.withAlpha(1);
+        selectedEntity.point.outlineWidth = 4;
+      }
+    }
+
     overlayDataSourceRef.current = overlay;
     viewer.dataSources.add(overlay);
-  }, [analysisArea, routePath]);
+  }, [analysisArea, routePath, selectedRestaurant]);
 
   // 选中 & 悬停视觉反馈：选中变大变红、悬停微放大
   useEffect(() => {

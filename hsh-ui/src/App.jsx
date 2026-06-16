@@ -228,20 +228,17 @@ function App() {
 
   // 打卡清单 → 坐标数组，供路线折线绘制（≥2 个点才画线）
   const routePath = useMemo(() => {
-    if (routePlan?.path?.length > 1) {
-      return routePlan.path
-        .map(([lng, lat]) => ({ lng: Number(lng), lat: Number(lat) }))
-        .filter((point) => Number.isFinite(point.lng) && Number.isFinite(point.lat));
-    }
+    if (!routePlan?.path?.length || routePlan.path.length < 2) return [];
 
-    return checklist
-      .map(getPoint)
+    return routePlan.path
+      .map(([lng, lat]) => ({ lng: Number(lng), lat: Number(lat) }))
       .filter((point) => Number.isFinite(point.lng) && Number.isFinite(point.lat));
-  }, [checklist, routePlan]);
+  }, [routePlan]);
 
   const routeDistanceM = useMemo(() => {
+    if (!routePlan) return null;
     if (Number.isFinite(Number(routePlan?.totalDistanceM))) return Number(routePlan.totalDistanceM);
-    if (routePath.length < 2) return 0;
+    if (routePath.length < 2) return null;
     return routePath.slice(1).reduce((sum, point, index) => (
       sum + distanceMeters(routePath[index], point)
     ), 0);
@@ -380,9 +377,22 @@ function App() {
       message.warning('打卡清单不足两家餐厅，无法预览路线');
       return;
     }
-    setRoutePlan(null);
+    const fallbackPath = checklist
+      .map(getPoint)
+      .filter((point) => Number.isFinite(point.lng) && Number.isFinite(point.lat));
+    const fallbackDistance = fallbackPath.slice(1).reduce((sum, point, index) => (
+      sum + distanceMeters(fallbackPath[index], point)
+    ), 0);
+    setRoutePlan({
+      travelMode,
+      method: 'straight_line',
+      count: fallbackPath.length,
+      totalDistanceM: fallbackDistance,
+      path: fallbackPath.map((point) => [point.lng, point.lat]),
+      note: '当前使用本地直线距离预览',
+    });
     message.info('当前使用本地直线距离预览');
-  }, [apiStatus, checklist.length]);
+  }, [apiStatus, checklist]);
 
   // 范围搜索：优先调后端 /api/restaurants/search?center_lon&center_lat&radius，
   // 后端失败则本地 haversine 计算距离过滤，并标记 apiStatus 为 offline

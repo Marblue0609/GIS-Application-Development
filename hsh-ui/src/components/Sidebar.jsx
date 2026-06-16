@@ -101,9 +101,11 @@ function Sidebar({
   const [routeStart, setRouteStart] = useState('当前位置');
   const [analysisCenterId, setAnalysisCenterId] = useState(null);
   const [analysisCenter, setAnalysisCenter] = useState(null);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   // 局部更新筛选条件（合并到当前 state）
   const updateFilters = (patch) => {
+    setShowSearchResults(false);
     onFiltersChange((current) => ({ ...current, ...patch }));
   };
 
@@ -168,6 +170,7 @@ function Sidebar({
 
   // 重置筛选条件到默认值
   const resetFilters = () => {
+    setShowSearchResults(false);
     onFiltersChange({
       keyword: '',
       category: null,
@@ -251,6 +254,9 @@ function Sidebar({
             />
           </div>
           <div className="action-row">
+            <Button type="primary" icon={<SearchOutlined />} onClick={() => setShowSearchResults(true)}>
+              搜索
+            </Button>
             <Button icon={<GiftOutlined />} onClick={handleRandom}>
               盲盒
             </Button>
@@ -288,32 +294,34 @@ function Sidebar({
         </section>
       )}
 
-      <section className="result-section">
-        <div className="section-title">
-          <EnvironmentOutlined />
-          <span>结果列表</span>
-        </div>
-        <List
-          className="restaurant-list"
-          dataSource={restaurants.slice(0, 120)}
-          locale={{ emptyText: '没有匹配的餐厅' }}
-          renderItem={(restaurant) => (
-            <List.Item
-              className={restaurant.id === selectedRestaurant?.id ? 'restaurant-item active' : 'restaurant-item'}
-              onClick={() => onSelectRestaurant(restaurant)}
-            >
-              <div className="restaurant-main">
-                <Text strong>{restaurant.name}</Text>
-                <Text type="secondary">{restaurant.address}</Text>
-              </div>
-              <div className="restaurant-side">
-                <span><StarFilled /> {restaurant.rating || '-'}</span>
-                <Tag>{formatDistance(restaurant.distanceM) ?? restaurant.category}</Tag>
-              </div>
-            </List.Item>
-          )}
-        />
-      </section>
+      {showSearchResults && (
+        <section className="result-section">
+          <div className="section-title">
+            <EnvironmentOutlined />
+            <span>结果列表</span>
+          </div>
+          <List
+            className="restaurant-list"
+            dataSource={restaurants.slice(0, 120)}
+            locale={{ emptyText: '没有匹配的餐厅' }}
+            renderItem={(restaurant) => (
+              <List.Item
+                className={restaurant.id === selectedRestaurant?.id ? 'restaurant-item active' : 'restaurant-item'}
+                onClick={() => onSelectRestaurant(restaurant)}
+              >
+                <div className="restaurant-main">
+                  <Text strong>{restaurant.name}</Text>
+                  <Text type="secondary">{restaurant.address}</Text>
+                </div>
+                <div className="restaurant-side">
+                  <span><StarFilled /> {restaurant.rating || '-'}</span>
+                  <Tag>{formatDistance(restaurant.distanceM) ?? restaurant.category}</Tag>
+                </div>
+              </List.Item>
+            )}
+          />
+        </section>
+      )}
     </>
   );
 
