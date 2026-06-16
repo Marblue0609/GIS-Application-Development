@@ -12,7 +12,7 @@ const getProp = (properties, key, fallback = '') => {
  * 原始数据中菜系字段（restaura_4）来自高德 POI 分类，细粒度较高，
  * 此处合并为 13 个大类便于筛选和图例展示。
  */
-const normalizeCategory = (category) => {
+export const normalizeCategory = (category) => {
   if (!category) return '其他';
   if (category.includes('饮品') || category.includes('咖啡') || category.includes('茶')) return '饮品咖啡';
   if (category.includes('糕') || category.includes('饼') || category.includes('甜品') || category.includes('烘焙')) return '甜品烘焙';
@@ -52,6 +52,7 @@ export const normalizeRestaurantFeature = (feature) => {
     rating: Number(getProp(properties, 'restaura_2', 0)) || 0,
     phone: getProp(properties, 'restaura_3', '暂无电话'),
     category: normalizeCategory(categoryRaw),
+    categoryGroup: normalizeCategory(categoryRaw),
     categoryRaw,
     categoryCode: getProp(properties, 'restaura_5', ''),
     price: Number(getProp(properties, 'restaura_6', 0)) || 0,

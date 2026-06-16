@@ -1,4 +1,5 @@
 import api from './api';
+import { normalizeCategory } from './restaurantData';
 
 /**
  * 从不同后端响应结构中统一取出 items 数组。
@@ -18,6 +19,7 @@ const normalizeApiRestaurant = (item) => {
   if (!item) return null;
   const lng = Number(item.lng ?? item.lon ?? item.restaurant_lng);
   const lat = Number(item.lat ?? item.restaurant_lat);
+  const categoryRaw = item.categoryRaw ?? item.restaurant_category ?? item.category ?? '其他';
 
   return {
     id: String(item.id ?? item.restaurant_id ?? ''),
@@ -26,7 +28,8 @@ const normalizeApiRestaurant = (item) => {
     rating: Number(item.rating ?? item.restaurant_rate ?? 0) || 0,
     phone: item.phone ?? item.restaurant_telephone ?? '暂无电话',
     category: item.category ?? item.restaurant_category ?? '其他',
-    categoryRaw: item.categoryRaw ?? item.restaurant_category ?? item.category ?? '其他',
+    categoryGroup: normalizeCategory(categoryRaw),
+    categoryRaw,
     price: Number(item.price ?? item.restaurant_avg_price ?? 0) || 0,
     address: item.address ?? item.restaurant_text_position ?? '暂无地址',
     lng,
@@ -50,7 +53,7 @@ const normalizeApiRestaurant = (item) => {
  *
  * @example
  * toSearchParams({ keyword: '火锅', category: '川渝菜', minRating: 3.5, priceRange: [20, 200] })
- * // => { keyword: '火锅', category: '川渝菜', min_rating: 3.5, min_price: 20, max_price: 200, limit: 120, offset: 0 }
+ * // => { keyword: '火锅', category: '川渝菜', min_rating: 3.5, min_price: 20, max_price: 200, limit: 500, offset: 0 }
  */
 const toSearchParams = (filters = {}, extra = {}) => ({
   keyword: filters.keyword || undefined,
@@ -58,7 +61,7 @@ const toSearchParams = (filters = {}, extra = {}) => ({
   min_price: filters.priceRange?.[0],
   max_price: filters.priceRange?.[1],
   min_rating: filters.minRating,
-  limit: extra.limit ?? 120,
+  limit: extra.limit ?? 500,
   offset: extra.offset ?? 0,
   center_lon: extra.center_lon,
   center_lat: extra.center_lat,
