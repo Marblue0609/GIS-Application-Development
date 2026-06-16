@@ -70,7 +70,7 @@ def import_restaurants():
         data = json.load(f)
 
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE TABLE restaurants RESTART IDENTITY;"))
+        conn.execute(text("TRUNCATE TABLE restaurants RESTART IDENTITY CASCADE;"))
 
         for feature in data["features"]:
             props = feature["properties"]
