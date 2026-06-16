@@ -46,10 +46,73 @@ FALLBACK_SPEED_MPS = {
     "driving": 11.0,  # 驾车 ~40 km/h (城区)
 }
 
+# GCJ-02 / WGS84 conversion constants. Project restaurant geometries are WGS84;
+# AMap direction APIs accept and return GCJ-02 coordinates.
+PI = 3.1415926535897932384626
+EARTH_A = 6378245.0
+EARTH_EE = 0.00669342162296594323
+
 # 高德是国内服务, 强制直连、不走系统代理.
 # 否则本机若开着 VPN/Clash(或残留 HTTP(S)_PROXY 环境变量), 会把国内请求
 # 转到海外节点导致 SSL 握手超时. 用空 ProxyHandler 显式绕过代理.
 _DIRECT_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
+def out_of_china(lng: float, lat: float) -> bool:
+    """Return True when GCJ-02 offset should not be applied."""
+    return not (73.66 < lng < 135.05 and 3.86 < lat < 53.55)
+
+
+def transform_lat(x: float, y: float) -> float:
+    ret = (
+        -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * math.sqrt(abs(x))
+    )
+    ret += (20.0 * math.sin(6.0 * x * PI) + 20.0 * math.sin(2.0 * x * PI)) * 2.0 / 3.0
+    ret += (20.0 * math.sin(y * PI) + 40.0 * math.sin(y / 3.0 * PI)) * 2.0 / 3.0
+    ret += (
+        (160.0 * math.sin(y / 12.0 * PI) + 320.0 * math.sin(y * PI / 30.0)) * 2.0 / 3.0
+    )
+    return ret
+
+
+def transform_lng(x: float, y: float) -> float:
+    ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * math.sqrt(abs(x))
+    ret += (20.0 * math.sin(6.0 * x * PI) + 20.0 * math.sin(2.0 * x * PI)) * 2.0 / 3.0
+    ret += (20.0 * math.sin(x * PI) + 40.0 * math.sin(x / 3.0 * PI)) * 2.0 / 3.0
+    ret += (
+        (150.0 * math.sin(x / 12.0 * PI) + 300.0 * math.sin(x / 30.0 * PI)) * 2.0 / 3.0
+    )
+    return ret
+
+
+def _gcj_delta(lng: float, lat: float) -> tuple[float, float]:
+    dlat = transform_lat(lng - 105.0, lat - 35.0)
+    dlng = transform_lng(lng - 105.0, lat - 35.0)
+    radlat = lat / 180.0 * PI
+    magic = math.sin(radlat)
+    magic = 1 - EARTH_EE * magic * magic
+    sqrtmagic = math.sqrt(magic)
+    dlat = (dlat * 180.0) / ((EARTH_A * (1 - EARTH_EE)) / (magic * sqrtmagic) * PI)
+    dlng = (dlng * 180.0) / (EARTH_A / sqrtmagic * math.cos(radlat) * PI)
+    return dlng, dlat
+
+
+def wgs84_to_gcj02(lng: float, lat: float) -> tuple[float, float]:
+    """Convert WGS84 to GCJ-02 for AMap request parameters."""
+    if out_of_china(lng, lat):
+        return lng, lat
+    dlng, dlat = _gcj_delta(lng, lat)
+    return lng + dlng, lat + dlat
+
+
+def gcj02_to_wgs84(lng: float, lat: float) -> list[float]:
+    """Convert AMap GCJ-02 route points back to WGS84 for Cesium display."""
+    if out_of_china(lng, lat):
+        return [lng, lat]
+    dlng, dlat = _gcj_delta(lng, lat)
+    mglng = lng + dlng
+    mglat = lat + dlat
+    return [lng * 2 - mglng, lat * 2 - mglat]
 
 
 def haversine_m(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
@@ -186,15 +249,17 @@ def plan_route(travel_mode: str = "walking", db: Session = Depends(get_db)):
         # 有 key: 相邻两家调一次高德, 把各段真实路线拼起来
         try:
             for a, b in zip(waypoints, waypoints[1:]):
+                origin_lng, origin_lat = wgs84_to_gcj02(a["lng"], a["lat"])
+                dest_lng, dest_lat = wgs84_to_gcj02(b["lng"], b["lat"])
                 dist, dur, pts = amap_leg(
                     travel_mode,
-                    _fmt_point(a["lng"], a["lat"]),
-                    _fmt_point(b["lng"], b["lat"]),
+                    _fmt_point(origin_lng, origin_lat),
+                    _fmt_point(dest_lng, dest_lat),
                     key,
                 )
                 total_distance_m += dist
                 total_duration_s += dur
-                path.extend(pts)
+                path.extend(gcj02_to_wgs84(lng, lat) for lng, lat in pts)
         except Exception as exc:  # noqa: BLE001 - 任何失败都退回直线, 保证不崩
             method = "straight_line"
             note = f"高德调用失败, 已退回直线估算: {exc}"
@@ -219,6 +284,7 @@ def plan_route(travel_mode: str = "walking", db: Session = Depends(get_db)):
         "estimatedDurationS": round(total_duration_s, 1),
         "waypoints": waypoints,
         "path": path,
+        "pathCoordinateSystem": "WGS84",
     }
     if note:
         data["note"] = note
