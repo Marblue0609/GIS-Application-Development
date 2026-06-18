@@ -60,6 +60,48 @@ const distanceMeters = (a, b) => {
   return 2 * radius * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 };
 
+const normalizeRoutePoint = (point) => {
+  if (Array.isArray(point)) {
+    return { lng: Number(point[0]), lat: Number(point[1]) };
+  }
+  return getPoint(point);
+};
+
+const isValidPoint = (point) => Number.isFinite(point?.lng) && Number.isFinite(point?.lat);
+
+const attachWaypointsToRoutePath = (path, waypoints) => {
+  const validPath = path.map(normalizeRoutePoint).filter(isValidPoint);
+  const validWaypoints = waypoints.map(normalizeRoutePoint).filter(isValidPoint);
+  if (validPath.length < 2) return validWaypoints;
+  if (!validWaypoints.length) return validPath;
+
+  const merged = [...validPath];
+  validWaypoints.forEach((waypoint, index) => {
+    if (index === 0) {
+      if (distanceMeters(waypoint, merged[0]) > 3) merged.unshift(waypoint);
+      return;
+    }
+
+    if (index === validWaypoints.length - 1) {
+      if (distanceMeters(waypoint, merged[merged.length - 1]) > 3) merged.push(waypoint);
+      return;
+    }
+
+    let nearestIndex = 0;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    merged.forEach((point, pointIndex) => {
+      const distance = distanceMeters(waypoint, point);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = pointIndex;
+      }
+    });
+    if (nearestDistance > 3) merged.splice(nearestIndex + 1, 0, waypoint);
+  });
+
+  return merged;
+};
+
 /**
  * 应用根组件。
  *
@@ -90,6 +132,23 @@ function App() {
     priceRange: [0, 500],
     minRating: 0,
   });
+
+  const clearActiveSelection = useCallback(() => {
+    setSelectedRestaurant(null);
+    setSelectedMapItem(null);
+    setFocusedRestaurantId(null);
+  }, []);
+
+  const handleFiltersChange = useCallback((updater) => {
+    setRoutePlan(null);
+    clearActiveSelection();
+    setFilters(updater);
+  }, [clearActiveSelection]);
+
+  const handleClearRoute = useCallback(() => {
+    setRoutePlan(null);
+    clearActiveSelection();
+  }, [clearActiveSelection]);
 
   // Step 1: 挂载时立即加载 3 个本地 GeoJSON（零延迟渲染）
   useEffect(() => {
@@ -173,7 +232,7 @@ function App() {
 
     const timer = window.setTimeout(async () => {
       try {
-        const result = await SearchRestaurants(toSearchParams(filters));
+        const result = await SearchRestaurants(toSearchParams(filters, { limit: 500, offset: 0 }));
         setVisibleRestaurants(result.items);
         setAnalysisArea(null); // 筛选条件变了，清除上一个范围圈
         setBufferStats([]);
@@ -227,21 +286,24 @@ function App() {
   }, [bufferStats, visibleRestaurants]);
 
   // 打卡清单 → 坐标数组，供路线折线绘制（≥2 个点才画线）
-  const routePath = useMemo(() => {
-    if (routePlan?.path?.length > 1) {
-      return routePlan.path
-        .map(([lng, lat]) => ({ lng: Number(lng), lat: Number(lat) }))
-        .filter((point) => Number.isFinite(point.lng) && Number.isFinite(point.lat));
-    }
-
-    return checklist
-      .map(getPoint)
-      .filter((point) => Number.isFinite(point.lng) && Number.isFinite(point.lat));
+  const routeWaypoints = useMemo(() => {
+    if (!routePlan) return [];
+    const source = routePlan.waypoints?.length ? routePlan.waypoints : checklist;
+    return source
+      .map((item) => ({ ...item, layerType: item.layerType ?? 'restaurant' }))
+      .filter((item) => isValidPoint(getPoint(item)));
   }, [checklist, routePlan]);
 
+  const routePath = useMemo(() => {
+    if (!routePlan?.path?.length || routePlan.path.length < 2) return [];
+
+    return attachWaypointsToRoutePath(routePlan.path, routeWaypoints);
+  }, [routePlan, routeWaypoints]);
+
   const routeDistanceM = useMemo(() => {
+    if (!routePlan) return null;
     if (Number.isFinite(Number(routePlan?.totalDistanceM))) return Number(routePlan.totalDistanceM);
-    if (routePath.length < 2) return 0;
+    if (routePath.length < 2) return null;
     return routePath.slice(1).reduce((sum, point, index) => (
       sum + distanceMeters(routePath[index], point)
     ), 0);
@@ -275,7 +337,7 @@ function App() {
           return [...current, saved].sort((a, b) => (a.checkOrder ?? 0) - (b.checkOrder ?? 0));
         });
         setRoutePlan(null);
-        message.success('已同步加入后端打卡清单');
+        message.success('已加入打卡清单');
         return;
       } catch (error) {
         if (error?.response?.status === 409) {
@@ -302,7 +364,7 @@ function App() {
         await DeleteCheckListItem(target.checkId);
         setChecklist((current) => current.filter((item) => item.id !== restaurantId));
         setRoutePlan(null);
-        message.success('已从后端打卡清单移除');
+        message.success('已移出打卡清单');
         return;
       } catch (error) {
         console.warn('Delete check-list API failed, using local removal.', error);
@@ -347,7 +409,7 @@ function App() {
         const picked = await RandomRestaurant(params);
         if (picked) {
           handleFocusRestaurant(picked);
-          message.success('已从后端随机推荐一家餐厅');
+          message.success('已为你推荐一家餐厅');
           return;
         }
       } catch (error) {
@@ -368,7 +430,8 @@ function App() {
         if (plan.count < 2) {
           message.warning(plan.message || '打卡清单不足两家餐厅，无法规划路线');
         } else {
-          message.success('已获取后端路线规划结果');
+          clearActiveSelection();
+          message.success('已生成路线');
         }
         return;
       } catch (error) {
@@ -380,9 +443,23 @@ function App() {
       message.warning('打卡清单不足两家餐厅，无法预览路线');
       return;
     }
-    setRoutePlan(null);
+    const fallbackPath = checklist
+      .map(getPoint)
+      .filter((point) => Number.isFinite(point.lng) && Number.isFinite(point.lat));
+    const fallbackDistance = fallbackPath.slice(1).reduce((sum, point, index) => (
+      sum + distanceMeters(fallbackPath[index], point)
+    ), 0);
+    setRoutePlan({
+      travelMode,
+      method: 'straight_line',
+      count: fallbackPath.length,
+      totalDistanceM: fallbackDistance,
+      path: fallbackPath.map((point) => [point.lng, point.lat]),
+      note: '当前使用本地直线距离预览',
+    });
+    clearActiveSelection();
     message.info('当前使用本地直线距离预览');
-  }, [apiStatus, checklist.length]);
+  }, [apiStatus, checklist, clearActiveSelection]);
 
   // 范围搜索：优先调后端 /api/restaurants/search?center_lon&center_lat&radius，
   // 后端失败则本地 haversine 计算距离过滤，并标记 apiStatus 为 offline
@@ -469,7 +546,7 @@ function App() {
           apiStatus={apiStatus}
           categories={categories}
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={handleFiltersChange}
           restaurants={visibleRestaurants}
           landmarks={landmarks}
           transportations={transportations}
@@ -488,6 +565,7 @@ function App() {
           onSaveRestaurant={handleSaveRestaurant}
           onRemoveRestaurant={handleRemoveRestaurant}
           onMoveChecklistItem={handleMoveChecklistItem}
+          onClearRoute={handleClearRoute}
           onPlanRoute={handlePlanRoute}
           onRandomRestaurant={handleRandomRestaurant}
           onSelectMapItem={handleFocusMapItem}
@@ -495,13 +573,16 @@ function App() {
         />
         <Content className="map-panel">
           <CesiumMap
+            activeCategory={filters.category}
             analysisArea={analysisArea}
             apiStatus={apiStatus}
             focusedRestaurantId={focusedRestaurantId}
             landmarks={landmarks}
             restaurants={visibleRestaurants}
             routePath={routePath}
+            routeWaypoints={routeWaypoints}
             selectedRestaurant={selectedRestaurant}
+            selectedMapItem={selectedMapItem}
             stats={stats}
             transportations={transportations}
             onSelectRestaurant={handleFocusRestaurant}

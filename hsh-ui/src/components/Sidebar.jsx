@@ -84,7 +84,6 @@ function Sidebar({
   checklist,
   routeDistanceM,
   routeMethod,
-  routeNote,
   onFeatureChange,
   onGoHome,
   onSelectRestaurant,
@@ -93,6 +92,7 @@ function Sidebar({
   onMoveChecklistItem,
   onSelectMapItem,
   onRadiusSearch,
+  onClearRoute,
   onPlanRoute,
   onRandomRestaurant,
 }) {
@@ -101,9 +101,11 @@ function Sidebar({
   const [routeStart, setRouteStart] = useState('当前位置');
   const [analysisCenterId, setAnalysisCenterId] = useState(null);
   const [analysisCenter, setAnalysisCenter] = useState(null);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   // 局部更新筛选条件（合并到当前 state）
   const updateFilters = (patch) => {
+    setShowSearchResults(false);
     onFiltersChange((current) => ({ ...current, ...patch }));
   };
 
@@ -168,6 +170,7 @@ function Sidebar({
 
   // 重置筛选条件到默认值
   const resetFilters = () => {
+    setShowSearchResults(false);
     onFiltersChange({
       keyword: '',
       category: null,
@@ -194,9 +197,9 @@ function Sidebar({
   const apiLabel = apiStatus === 'online' ? 'API 已连接' : apiStatus === 'checking' ? '连接中' : '本地数据';
   const routeDistanceText = formatDistance(routeDistanceM) ?? '--';
   const routeMethodLabel = routeMethod === 'amap'
-    ? '高德路网'
+    ? '路网路线'
     : routeMethod === 'straight_line'
-      ? '直线兜底'
+      ? '直线预览'
       : routeMethod === 'none'
         ? '未成线'
         : '待规划';
@@ -251,6 +254,9 @@ function Sidebar({
             />
           </div>
           <div className="action-row">
+            <Button type="primary" icon={<SearchOutlined />} onClick={() => setShowSearchResults(true)}>
+              搜索
+            </Button>
             <Button icon={<GiftOutlined />} onClick={handleRandom}>
               盲盒
             </Button>
@@ -288,32 +294,34 @@ function Sidebar({
         </section>
       )}
 
-      <section className="result-section">
-        <div className="section-title">
-          <EnvironmentOutlined />
-          <span>结果列表</span>
-        </div>
-        <List
-          className="restaurant-list"
-          dataSource={restaurants.slice(0, 120)}
-          locale={{ emptyText: '没有匹配的餐厅' }}
-          renderItem={(restaurant) => (
-            <List.Item
-              className={restaurant.id === selectedRestaurant?.id ? 'restaurant-item active' : 'restaurant-item'}
-              onClick={() => onSelectRestaurant(restaurant)}
-            >
-              <div className="restaurant-main">
-                <Text strong>{restaurant.name}</Text>
-                <Text type="secondary">{restaurant.address}</Text>
-              </div>
-              <div className="restaurant-side">
-                <span><StarFilled /> {restaurant.rating || '-'}</span>
-                <Tag>{formatDistance(restaurant.distanceM) ?? restaurant.category}</Tag>
-              </div>
-            </List.Item>
-          )}
-        />
-      </section>
+      {showSearchResults && (
+        <section className="result-section">
+          <div className="section-title">
+            <EnvironmentOutlined />
+            <span>结果列表</span>
+          </div>
+          <List
+            className="restaurant-list"
+            dataSource={restaurants.slice(0, 120)}
+            locale={{ emptyText: '没有匹配的餐厅' }}
+            renderItem={(restaurant) => (
+              <List.Item
+                className={restaurant.id === selectedRestaurant?.id ? 'restaurant-item active' : 'restaurant-item'}
+                onClick={() => onSelectRestaurant(restaurant)}
+              >
+                <div className="restaurant-main">
+                  <Text strong>{restaurant.name}</Text>
+                  <Text type="secondary">{restaurant.address}</Text>
+                </div>
+                <div className="restaurant-side">
+                  <span><StarFilled /> {restaurant.rating || '-'}</span>
+                  <Tag>{formatDistance(restaurant.distanceM) ?? restaurant.category}</Tag>
+                </div>
+              </List.Item>
+            )}
+          />
+        </section>
+      )}
     </>
   );
 
@@ -398,19 +406,24 @@ function Sidebar({
         </div>
         <div className={`route-method ${routeMethod ?? 'pending'}`}>
           <span>{routeMethodLabel}</span>
-          {routeNote && <Text type="secondary">{routeNote}</Text>}
         </div>
-        <Button
-          type="primary"
-          icon={<SwapOutlined />}
-          disabled={checklist.length < 2}
-          onClick={() => onPlanRoute(routeMode)}
-        >
-          预览清单路线
-        </Button>
-        <Text type="secondary">
-          后端配置 AMAP_KEY 后返回高德真实路网；未配置或调用失败时，自动退回直线估算，前端按返回 path 绘制。
-        </Text>
+        <div className="action-row">
+          <Button
+            type="primary"
+            icon={<SwapOutlined />}
+            disabled={checklist.length < 2}
+            onClick={() => onPlanRoute(routeMode)}
+          >
+            预览清单路线
+          </Button>
+          <Button
+            icon={<DeleteOutlined />}
+            disabled={!routeMethod}
+            onClick={onClearRoute}
+          >
+            清除路线
+          </Button>
+        </div>
       </Space>
     </section>
   );
