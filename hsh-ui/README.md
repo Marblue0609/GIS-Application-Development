@@ -1,169 +1,275 @@
-# CityTaste 前端模块说明文档
+# CityTaste Frontend
 
-## 1. 模块定位
+CityTaste 是面向浙江大学紫金港校区周边餐饮场景的 GIS Web 前端。项目以 Cesium 2D 地图为核心，提供餐厅检索、空间范围分析、随机推荐、打卡清单和路线预览，并支持 FastAPI 后端与本地 GeoJSON 双数据源运行。
 
-`hsh-ui` 是 CityTaste 项目的前端界面模块，主要负责：
+## 功能概览
 
-- Cesium 地图展示；
-- 餐厅、地标、交通点位的前端可视化；
-- 餐厅搜索、筛选、点选、高亮、飞行定位；
-- 范围距离搜索、缓冲区分析、路径规划、打卡清单等功能入口；
-- 后续与 FastAPI / GeoServer / PostGIS 数据服务对接。
+### 首页
 
-当前阶段以前端原型和本地 GeoJSON 数据展示为主，后续 API 稳定后再替换数据源。
+- 展示项目定位、数据状态和当前图层数量；
+- 提供搜索、范围分析和路线功能的快捷入口；
+- 可从首页进入地图工作台。
 
-## 2. 目录结构
+### 餐厅检索
+
+- 按名称、地址或菜系关键词搜索；
+- 按菜系、人均价格、最低评分筛选；
+- 展示当前结果数量、平均评分和平均价格；
+- 结果列表与地图点位联动；
+- 支持随机餐厅盲盒推荐。
+
+### 地图交互
+
+- 使用 Cesium `SCENE2D` 模式展示地图；
+- 加载餐厅、地标和交通设施三类点位；
+- 使用 CARTO `light_all` 灰色栅格底图；
+- 餐厅按菜系着色，地标和交通点使用独立颜色；
+- SVG 点位支持悬停、选中、高亮和飞行定位；
+- 根据地图视野进行 LOD 抽稀和屏幕碰撞控制；
+- 支持缓冲区圆、路线和路线途经点绘制。
+
+### 范围分析
+
+- 可选择餐厅、地标或交通设施作为分析中心；
+- 支持 200-3000 米搜索半径；
+- 在地图上绘制分析范围；
+- 展示范围内餐厅及菜系结构图；
+- 后端不可用时自动使用前端 Haversine 距离计算。
+
+### 打卡清单与路线
+
+- 将选中餐厅加入打卡清单；
+- 支持清单去重、排序和删除；
+- 支持步行、骑行和驾车路线模式；
+- 后端可用时调用真实路线接口；
+- 后端不可用时使用本地直线距离和折线预览。
+
+## 技术栈
+
+| 技术 | 用途 |
+| --- | --- |
+| React 19 | 组件和状态管理 |
+| Vite 8 | 开发服务器与生产构建 |
+| Cesium 1.141 | 2D 地图、点位和空间覆盖层 |
+| Ant Design 6 | 表单、列表、标签和布局组件 |
+| ECharts 6 | 菜系统计图表 |
+| Axios | FastAPI 请求 |
+| ESLint 10 | 静态代码检查 |
+
+## 目录结构
 
 ```text
 hsh-ui/
 ├── public/
-│   ├── restaurants.geojson       # 餐厅点位数据，来自 ld-data/data/json/rest/rest4326.geojson
-│   ├── landmarks.geojson         # 地标点位数据，来自 ld-data/data/json/landmark/landmark_4326.geojson
-│   └── transportations.geojson   # 交通点位数据，来自 ld-data/data/json/tran/tran_4326.geojson
-│
+│   ├── favicon.svg
+│   ├── icons.svg
+│   ├── restaurants.geojson       # 本地餐厅数据
+│   ├── landmarks.geojson         # 本地地标数据
+│   └── transportations.geojson   # 本地交通设施数据
 ├── src/
+│   ├── assets/                    # 页面图片和静态资源
 │   ├── components/
-│   │   ├── CesiumMap.jsx         # Cesium 地图、点位图层、hover 卡片、飞行定位
-│   │   └── Sidebar.jsx           # 左侧功能面板、搜索筛选、分析/路线/清单入口
-│   │
+│   │   ├── CesiumMap.jsx         # 地图初始化、图层、点位和地图交互
+│   │   ├── HomePage.jsx          # 首页
+│   │   └── Sidebar.jsx           # 搜索、分析、路线和清单面板
 │   ├── services/
-│   │   ├── api.js                # Axios 基础配置，预留后端 API 使用
-│   │   ├── restaurantService.js  # 后端接口函数草稿
-│   │   ├── restaurantData.js     # 餐厅 GeoJSON 字段标准化、分类、筛选
-│   │   └── mapData.js            # 地标/交通点标准化、WGS84 到 GCJ-02 显示转换
-│   │
-│   ├── App.jsx                   # 全局状态、数据加载、组件组织
-│   ├── main.jsx                  # React 入口、Ant Design 主题配置
-│   └── index.css                 # 全局布局和 UI 样式
-│
+│   │   ├── api.js                # Axios 实例和 API 地址
+│   │   ├── mapData.js            # 地标和交通 GeoJSON 标准化
+│   │   ├── restaurantData.js     # 餐厅标准化、分类和本地筛选
+│   │   └── restaurantService.js  # FastAPI 接口封装
+│   ├── App.jsx                    # 应用状态、数据加载和业务流程
+│   ├── index.css                 # 全局页面与组件样式
+│   └── main.jsx                  # React 入口和 Ant Design 主题
+├── .env                          # 本地环境变量，不应提交
+├── index.html
 ├── package.json
 ├── vite.config.js
 └── README.md
 ```
 
-## 3. 本地运行
+## 快速开始
 
-进入前端目录：
+### 1. 环境要求
+
+- Node.js 20 或更高版本；
+- npm；
+- 可选：运行于 `http://127.0.0.1:8000` 的 CityTaste FastAPI 后端。
+
+### 2. 安装依赖
 
 ```bash
-cd /Users/hsh/Applications/gisad_final/GIS-Application-Development/hsh-ui
-```
-
-安装依赖：
-
-```bash
+cd hsh-ui
 npm install
 ```
 
-启动本地开发服务：
+### 3. 配置环境变量
+
+在 `hsh-ui/.env` 中按需配置：
+
+```dotenv
+VITE_API_BASE_URL=http://127.0.0.1:8000/api
+VITE_CESIUM_ION_TOKEN=your_cesium_ion_token
+```
+
+环境变量说明：
+
+| 变量 | 是否必需 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `VITE_API_BASE_URL` | 否 | `http://127.0.0.1:8000/api` | FastAPI 基础地址 |
+| `VITE_CESIUM_ION_TOKEN` | 否 | 无 | Cesium Ion Token；当前 CARTO 底图不依赖该 Token |
+
+不要将真实 Token 提交到 Git。
+
+### 4. 启动开发服务器
 
 ```bash
 npm run dev
 ```
 
-终端会显示本地访问地址，例如：
+默认访问地址：
 
 ```text
 http://localhost:5173/
 ```
 
-浏览器打开该地址即可查看页面。
-
-## 4. 常用命令
-
-```bash
-npm run dev
-```
-
-用于本地开发和查看可视化页面。
-
-```bash
-npm run lint
-```
-
-用于检查代码规范和明显的语法问题。
+### 5. 生产构建
 
 ```bash
 npm run build
 ```
 
-用于生成生产部署版本，输出到 `dist/`。`dist/` 已被 `.gitignore` 忽略，不需要提交。
+构建产物输出到 `hsh-ui/dist/`。
 
-## 5. 当前数据说明
+本地预览生产构建：
 
-当前前端直接读取 `public/` 下的三份 GeoJSON：
+```bash
+npm run preview
+```
 
-| 前端文件 | 来源 | 数据类型 | 数量 |
-| --- | --- | --- | --- |
-| `public/restaurants.geojson` | `ld-data/data/json/rest/rest4326.geojson` | 餐厅点 | 482 |
-| `public/landmarks.geojson` | `ld-data/data/json/landmark/landmark_4326.geojson` | 地标点 | 8 |
-| `public/transportations.geojson` | `ld-data/data/json/tran/tran_4326.geojson` | 交通点 | 286 |
+## 常用命令
 
-这些数据均为 WGS84 坐标。由于当前底图采用偏平面低饱和地图风格，前端在 `mapData.js` 中保留了 WGS84 到 GCJ-02 的显示转换能力，便于切换高德类底图时保持点位对齐。
+| 命令 | 说明 |
+| --- | --- |
+| `npm run dev` | 启动 Vite 开发服务器 |
+| `npm run build` | 生成生产构建 |
+| `npm run preview` | 预览生产构建 |
+| `npm run lint` | 执行 ESLint 检查 |
 
-## 6. 当前已实现功能
+提交代码前建议运行：
 
-### 6.1 地图展示
+```bash
+npm run lint
+npm run build
+```
 
-- Cesium 2D 地图展示；
-- 餐厅点、地标点、交通点分层显示；
-- 鼠标悬停点位时显示名称、类型、评分等信息；
-- 点击点位后地图从当前视角飞行到目标点；
-- 选中点高亮显示。
+## 数据加载与降级策略
 
-### 6.2 餐厅搜索与筛选
+应用启动时采用“本地数据先展示，后端数据再替换”的策略：
 
-- 关键词搜索；
-- 菜系分类筛选；
-- 人均价格筛选；
-- 最低评分筛选；
-- 随机推荐；
-- 结果列表联动地图飞行定位。
+1. 并行读取 `public/` 下三份 GeoJSON，保证后端未启动时页面仍可使用；
+2. 同时请求 `GET /api/restaurants`；
+3. 请求成功后使用后端餐厅数据替换本地餐厅数据；
+4. 请求失败时将 API 状态设为离线，并继续使用本地 GeoJSON；
+5. 搜索、范围分析、随机推荐、清单和路线功能均优先调用后端，失败后按功能降级到本地实现。
 
-### 6.3 分析与规划功能占位
+因此，在控制台看到下面的错误时，通常只表示后端未启动，不会阻止本地模式运行：
 
-以下功能已在 UI 中预留入口，当前主要用于前端展示，后续等待后端 API 接入：
+```text
+GET http://127.0.0.1:8000/api/restaurants net::ERR_CONNECTION_REFUSED
+Backend API unavailable, using local GeoJSON fallback.
+```
 
-- 范围距离搜索；
-- 缓冲区分析；
-- ECharts 菜系占比图；
-- 路径规划；
-- 打卡清单；
-- 保存想去的餐厅。
+### 本地数据
 
-## 7. 后续 API / GeoServer 接入建议
+| 文件 | 内容 | 当前用途 |
+| --- | --- | --- |
+| `public/restaurants.geojson` | 餐厅点位及属性 | 本地检索、筛选、盲盒和范围分析 |
+| `public/landmarks.geojson` | 校园及周边地标 | 地图展示和分析中心 |
+| `public/transportations.geojson` | 公交、地铁等交通设施 | 地图展示和分析中心 |
 
-当前前端使用本地 GeoJSON：
+所有地图点位在进入组件前会被标准化为统一结构：
 
 ```js
-fetch('/restaurants.geojson')
-fetch('/landmarks.geojson')
-fetch('/transportations.geojson')
+{
+  id,
+  layerType,
+  name,
+  category,
+  address,
+  lng,
+  lat
+}
 ```
 
-后续如果 FastAPI 提供接口，可以替换为：
+餐厅记录还包含 `rating`、`price`、`phone`、`distanceM` 等业务字段。
+
+## 后端接口
+
+当前前端使用以下 FastAPI 接口：
+
+| 方法 | 路径 | 用途 | 本地降级 |
+| --- | --- | --- | --- |
+| `GET` | `/api/restaurants` | 获取餐厅列表 | 本地 GeoJSON |
+| `GET` | `/api/restaurants/search` | 多条件与空间搜索 | 本地数组过滤 |
+| `GET` | `/api/restaurants/random` | 随机推荐 | 当前结果随机抽取 |
+| `GET` | `/api/analysis/buffer` | 缓冲区分析 | Haversine 距离计算 |
+| `GET` | `/api/check-list` | 获取打卡清单 | 本地内存清单 |
+| `POST` | `/api/check-list` | 添加清单项 | 本地内存添加 |
+| `PUT` | `/api/check-list/{check_id}` | 更新清单顺序 | 保留本地顺序 |
+| `DELETE` | `/api/check-list/{check_id}` | 删除清单项 | 本地内存删除 |
+| `GET` | `/api/route/plan` | 生成打卡路线 | 本地直线折线 |
+
+后端默认启动方式请参考仓库中的 `backend/README.md`。
+
+## 核心状态流
 
 ```text
-/api/restaurants/search
-/api/analysis/buffer
-/api/route/plan
-/api/landmarks
-/api/transportations
+本地 GeoJSON ─┐
+              ├─> 标准化数据 ─> App 全局状态 ─> Sidebar / CesiumMap
+FastAPI API ──┘
+
+筛选条件 ─> 后端搜索或本地过滤 ─> visibleRestaurants ─> 列表与地图
+地图/列表点选 ─> selectedMapItem ─> 点位高亮与相机定位
+范围中心 + 半径 ─> 缓冲分析 ─> 餐厅结果 + 菜系统计 + 地图范围圈
+打卡清单 ─> 路线规划 ─> 路线坐标 + 距离 + 地图折线
 ```
 
-如果 GeoServer 已发布 WFS，建议优先用 WFS GeoJSON 接前端交互，因为前端需要属性数据用于 hover、筛选、点击、高亮和列表展示。
+## 地图实现说明
 
-WFS 示例：
+`CesiumMap.jsx` 负责：
 
-```text
-http://服务器地址:8080/geoserver/工作区名/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=工作区名:图层名&outputFormat=application/json
-```
+- 创建和销毁 Cesium Viewer；
+- 加载 CARTO 灰色底图和本地网格兜底层；
+- 将餐厅、地标和交通数据转换为 Cesium Entity；
+- 生成和缓存 SVG billboard 图标；
+- 根据视野跨度进行点位抽稀；
+- 避免屏幕中过密点位互相遮挡；
+- 处理 hover、点击、选中和相机飞行；
+- 绘制缓冲区、路线和路线途经点。
 
-WMS 更适合作为纯地图叠加图层，不适合当前这种需要丰富交互的点位 UI。
+地图使用 WGS84 经纬度。若未来切换到高德等 GCJ-02 底图，需要统一处理底图与业务数据的坐标系，避免点位偏移。
 
-## 8. Git 提交注意事项
+## 开发约定
 
-不要提交以下内容：
+### 新增后端请求
+
+1. 在 `src/services/restaurantService.js` 中封装接口；
+2. 使用 `src/services/api.js` 导出的 Axios 实例；
+3. 在 service 层将响应转换为前端统一字段；
+4. 在 `App.jsx` 中维护业务状态和失败降级；
+5. 组件只接收标准化数据和事件回调。
+
+### 修改地图点位
+
+- 保持实体 id 在图层内唯一；
+- 餐厅、地标、交通点必须包含正确的 `layerType`；
+- hover 和选中状态应更新现有 billboard，不要额外创建同位置实体；
+- 调整 SVG 时同时检查普通、hover、选中和高 DPI 屏幕效果；
+- 修改 LOD 或碰撞参数后检查远景、近景和相机飞行状态。
+
+### 提交前检查
+
+不要提交：
 
 ```text
 node_modules/
@@ -172,13 +278,192 @@ dist/
 *.log
 ```
 
-这些内容已在项目根目录 `.gitignore` 中配置。
-
-提交前建议运行：
+执行：
 
 ```bash
 npm run lint
 npm run build
 ```
 
-确保本地检查通过后再提交。
+## 常见问题
+
+### 后端请求显示 `ERR_CONNECTION_REFUSED`
+
+后端没有在 `VITE_API_BASE_URL` 对应地址运行。启动 FastAPI，或继续使用自动启用的本地 GeoJSON 模式。
+
+### 地图只有网格，没有 CARTO 底图
+
+检查浏览器网络连接、CARTO 瓦片请求和内容安全策略。网格是底图请求失败时的正常兜底。
+
+### Cesium 页面为空或 WebGL 报错
+
+- 检查浏览器是否启用硬件加速和 WebGL；
+- 检查控制台是否存在 Cesium `DeveloperError`；
+- 确认地图容器具有非零宽高；
+- 清理 Vite 缓存后重新启动开发服务器。
+
+### 点位出现偏移
+
+确认底图和 GeoJSON 使用同一坐标系。当前数据与 CARTO/OSM 底图均按 WGS84 使用。
+
+### 构建提示 chunk 超过 500 kB
+
+Cesium 本身体积较大，Vite 可能提示 chunk size warning。该提示不会阻止构建；如需优化首屏，可进一步拆分页面和懒加载地图模块。
+
+## 前端技术路线与设计理念
+
+本节用于课程报告、项目答辩和 PPT 展示，可根据篇幅选取其中内容。
+
+### 1. 总体技术路线
+
+前端采用“React 业务状态管理 + Cesium 地图可视化 + Ant Design 交互组件 + ECharts 统计图表 + Axios 数据通信”的技术路线。
+
+整体实现过程可以概括为：
+
+```text
+GeoJSON / FastAPI 数据
+        ↓
+数据读取与字段标准化
+        ↓
+React 统一业务状态管理
+        ↓
+搜索筛选、空间分析、清单和路线计算
+        ↓
+Cesium 地图 + Ant Design 面板 + ECharts 图表协同展示
+```
+
+在架构上，前端将数据访问、业务状态和界面展示分离：
+
+- `services/` 负责后端请求、GeoJSON 解析和字段标准化；
+- `App.jsx` 负责数据加载、功能状态和降级策略；
+- `Sidebar.jsx` 负责搜索、分析、路线和清单交互；
+- `CesiumMap.jsx` 负责空间数据可视化及地图事件；
+- `HomePage.jsx` 负责项目入口和功能导航。
+
+这种分层方式降低了组件之间的耦合，使本地数据和后端数据可以复用同一套界面与地图逻辑。
+
+### 2. 功能实现路线
+
+| 功能 | 主要方法 | 实现效果 |
+| --- | --- | --- |
+| 多源数据加载 | `fetch` 读取本地 GeoJSON，Axios 请求 FastAPI | 后端可用时使用数据库数据，后端不可用时仍可展示本地数据 |
+| 数据标准化 | 在 service 层统一字段、类别和坐标结构 | 屏蔽 GeoJSON 与 API 字段差异，组件只处理统一对象 |
+| 餐厅检索 | React 筛选状态、后端查询参数转换、本地数组过滤 | 支持关键词、菜系、价格和评分组合查询 |
+| 地图点位展示 | Cesium Entity 与 SVG billboard | 展示餐厅、地标和交通点，并通过颜色区分类别 |
+| 点位交互 | Cesium `ScreenSpaceEventHandler`、React 选中状态 | 实现 hover 信息、点击选中、高亮和相机飞行定位 |
+| 点位性能优化 | 视野 LOD、网格抽稀、屏幕碰撞检测 | 在点位较多时控制显示数量，减少重叠和渲染压力 |
+| 范围分析 | 后端缓冲区接口或前端 Haversine 距离计算 | 查询指定中心和半径内的餐厅，并在地图绘制范围圈 |
+| 统计图表 | 对分析结果分类汇总，使用 ECharts 饼图 | 展示范围内不同菜系的数量与结构 |
+| 随机盲盒 | 后端随机推荐接口或当前结果本地随机 | 快速推荐符合当前筛选条件的餐厅 |
+| 打卡清单 | React 数组状态与后端 CRUD 接口 | 支持餐厅收藏、去重、排序和删除 |
+| 路线预览 | 后端路线规划接口或本地直线距离计算 | 绘制打卡路线，并展示距离、方式和数据来源 |
+| 页面组织 | 首页与工作台双视图、功能 Tabs | 首页介绍项目，工作台集中完成 GIS 操作 |
+
+### 3. 数据加载与系统容错
+
+项目采用“本地优先显示、后端异步增强”的数据加载策略。
+
+页面启动后首先读取本地 GeoJSON，使地图可以快速呈现；与此同时，前端并行请求 FastAPI。当后端返回有效数据后，再使用后端结果替换本地餐厅数据。这样既能接入 PostGIS 数据和真实业务接口，也能保证在课堂演示、网络异常或后端未启动时，前端仍具备基本可用性。
+
+搜索、缓冲区分析、随机推荐、打卡清单和路线规划均采用类似的降级思路：
+
+- 后端在线：使用 API 和数据库结果；
+- 后端离线：使用 GeoJSON、本地筛选、距离计算和内存状态；
+- 界面通过状态标签提示当前数据来源。
+
+这一设计提高了系统的鲁棒性，也降低了前后端并行开发期间的联调依赖。
+
+### 4. 地图可视化技术路线
+
+地图部分使用 Cesium 的二维场景模式，底图采用 CARTO 灰色地图，业务数据使用 WGS84 经纬度加载。
+
+不同空间对象采用独立的视觉编码：
+
+- 餐厅根据菜系映射不同颜色；
+- 地标使用蓝色系图标；
+- 交通设施使用绿色系图标；
+- 当前选中点通过放大和高亮颜色强调；
+- 缓冲区使用半透明圆形覆盖层；
+- 打卡路线使用高对比度折线表示。
+
+点位使用 SVG billboard，在保持图标可辨识度的同时复用 Cesium 的拾取、定位和相机控制能力。地图事件通过 `ScreenSpaceEventHandler` 处理，点击结果同步到 React 状态，从而实现地图、侧栏和详情卡片之间的联动。
+
+针对大量点位可能导致的遮挡和性能问题，项目根据相机视野跨度动态调整点位数量，并使用地理网格和屏幕距离筛选代表点。远景减少点位，近景逐步展示更多内容，在信息完整性和交互流畅度之间取得平衡。
+
+### 5. 空间分析实现思路
+
+范围分析采用“选择中心点 + 设置半径 + 查询范围内对象”的交互流程。中心点可以来自餐厅、校园地标或交通设施。
+
+后端在线时，前端将中心经纬度和半径发送至缓冲区分析接口，由后端结合空间数据库完成查询；后端不可用时，前端使用 Haversine 公式计算球面距离，并筛选距离小于指定半径的餐厅。
+
+分析结果同时通过三种方式表达：
+
+1. 地图绘制半透明缓冲区；
+2. 列表展示范围内餐厅及距离；
+3. ECharts 展示菜系构成。
+
+这种“地图 + 列表 + 图表”的多视图表达方式，使空间位置、对象属性和统计结构可以互相补充。
+
+### 6. 路线与清单实现思路
+
+打卡清单承担路线规划前的目标组织功能。用户从搜索结果或详情卡片中保存餐厅，并可调整访问顺序。
+
+后端在线时，清单通过 CRUD 接口持久化，路线功能调用后端规划接口获取路径、距离和出行方式；后端离线时，清单保存在 React 状态中，路线按清单顺序连接坐标，并使用 Haversine 公式估算直线距离。
+
+前端会在界面中标注路线来源，区分真实路网结果和本地直线预览，避免将降级结果误认为真实导航路线。
+
+### 7. 界面设计理念
+
+界面以“地图为主、控制面板为辅”为核心布局。地图占据主要空间，侧栏集中放置参数、结果和操作，减少用户在多个页面之间切换。
+
+主要设计原则包括：
+
+- **任务导向：** 按搜索、分析、路线、清单划分功能，而不是按技术模块划分；
+- **渐进呈现：** 首页用于理解项目，进入工作台后再展示完整工具；
+- **地图联动：** 列表点击、盲盒推荐、中心点选择都与地图定位同步；
+- **视觉层级：** 使用颜色、大小和透明度区分底图、普通点位、选中点和分析结果；
+- **低干扰底图：** 使用低饱和灰色底图，突出餐厅点位和空间分析覆盖层；
+- **状态可见：** 明确显示 API 在线状态、结果数量、路线来源和分析半径；
+- **容错反馈：** 操作失败时提供消息提示，并尽可能自动切换到本地模式。
+
+### 8. 项目特点与可展示亮点
+
+报告或答辩中可以重点介绍以下内容：
+
+1. **前后端双模式运行：** 同一套前端既可以连接 FastAPI/PostGIS，也可以独立使用 GeoJSON 演示。
+2. **地图、列表和图表联动：** 同一个分析结果在空间位置、属性列表和统计结构三个层面同步表达。
+3. **统一数据模型：** 对本地 GeoJSON 和后端 API 返回值进行标准化，减少组件对数据来源的依赖。
+4. **空间功能可降级：** 后端不可用时，前端仍能完成筛选、缓冲范围计算、随机推荐和路线预览。
+5. **面向点位密集场景优化：** 使用 LOD 抽稀和屏幕碰撞检测改善地图可读性与交互性能。
+6. **完整业务闭环：** 从餐厅发现、条件筛选、空间分析到清单组织和路线预览形成连续工作流。
+
+### 9. 报告参考文案
+
+> CityTaste 前端采用 React、Cesium、Ant Design 和 ECharts 构建。React 负责应用状态和业务流程组织，Cesium 负责餐厅、地标、交通设施、缓冲区及路线的空间可视化，Ant Design 用于构建搜索筛选、详情列表和清单操作界面，ECharts 用于展示范围分析后的菜系结构。系统在数据层对 FastAPI 返回结果和本地 GeoJSON 进行统一标准化，并采用后端优先、本地降级的策略，使搜索、随机推荐、缓冲区分析和路线预览在后端不可用时仍能完成基本演示。界面设计以地图为主要工作空间，以任务型侧栏组织搜索、分析、路线和清单功能，实现地图、列表和图表之间的联动。
+
+### 10. PPT 精简文案
+
+**技术架构**
+
+- React + Vite 构建单页应用；
+- Cesium 实现二维 GIS 地图与空间覆盖层；
+- Ant Design 构建交互面板；
+- ECharts 展示餐饮类别统计；
+- Axios 对接 FastAPI 与 PostGIS 数据服务。
+
+**核心功能**
+
+- 多条件餐厅检索与随机推荐；
+- 餐厅、地标、交通点位可视化；
+- 指定中心与半径的范围分析；
+- 菜系结构统计图表；
+- 打卡清单管理与路线预览；
+- 地图、列表、详情和图表联动。
+
+**设计特点**
+
+- 地图为主、侧栏为辅的任务型工作台；
+- 低饱和底图突出业务数据；
+- FastAPI 在线模式与 GeoJSON 离线模式自动切换；
+- LOD 抽稀和碰撞检测提升点位可读性；
+- 从餐厅发现到路线规划形成完整业务流程。
