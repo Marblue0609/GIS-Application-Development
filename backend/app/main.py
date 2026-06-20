@@ -11,6 +11,7 @@ from app.api.analysis import router as analysis_router
 from app.api.recommend import router as recommend_router
 from app.api.restaurants import router as restaurants_router
 from app.api.checklist import router as checklist_router
+from app.api.chat import router as chat_router
 from app.api.route import router as route_router
 
 app = FastAPI(
@@ -45,6 +46,7 @@ app.include_router(recommend_router)
 app.include_router(restaurants_router)
 app.include_router(checklist_router)
 app.include_router(route_router)
+app.include_router(chat_router)
 
 
 @app.get("/", tags=["Root"])

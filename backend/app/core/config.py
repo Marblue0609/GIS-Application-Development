@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     # 高德 Web 服务 API key, 用于路线规划接口 (route.py). 不填则路线退回直线估算.
     amap_key: str = ""
 
+    # DeepSeek Chat API configuration. API key is read only by the backend.
+    deepseek_api_key: str = ""
+    deepseek_base_url: str = "https://api.deepseek.com"
+    deepseek_model: str = "deepseek-v4-flash"
+
     # The urls that backend is allowed to access
     backend_cors_origins: str = (
         "http://localhost:5173,"

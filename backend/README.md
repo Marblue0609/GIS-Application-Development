@@ -43,6 +43,9 @@ APP_NAME=CityTaste API
 APP_ENV=dev
 BACKEND_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 AMAP_KEY=你的高德Web服务key   # 路线规划用, 不填则路线退回直线估算
+DEEPSEEK_API_KEY=你的DeepSeek API key   # 餐厅助手用, 不填则问答接口返回配置错误
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-v4-flash
 ```
 
 > 数据库在 AutoDL 服务器上。本地开发需先开 SSH 隧道把远程 5432 映射到本地 15432：
@@ -81,6 +84,11 @@ id, layerType, name, rating, phone, category, price, address, lng, lat
 |---|---|---|
 | GET | `/api/health` | 服务存活检查 |
 | GET | `/api/db/check` | 数据库连接检查 |
+
+### 餐厅助手 `chat.py`
+| 方法 | 路径 | 请求体 | 说明 |
+|---|---|---|---|
+| POST | `/api/chat/restaurants` | `{ "messages": [{ "role": "user", "content": "..." }] }` | 使用 `app/AGENTS.md` 中的餐厅资料调用 DeepSeek 生成回答 |
 
 ### 餐厅 `restaurants.py`
 | 方法 | 路径 | 参数 | 说明 |
