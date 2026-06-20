@@ -1,9 +1,9 @@
-# ld-data 空间数据说明文档
+# data 空间数据说明文档
 
 ## 1. 目录结构
 
 !!!warning  
-    **数据重点内容在ld-data/data/json下面！！！**
+    **数据重点内容在data/data/json下面！！！**
 
 
 
@@ -13,7 +13,7 @@
 
 模块的目录结构及各文件用途说明如下：
 ```text
-ld-data/
+data/
 ├── data.md  # 模块核心说明文档
 │ 
 │ 

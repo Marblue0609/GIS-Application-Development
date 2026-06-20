@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ConfigProvider, Layout, message } from 'antd';
 import CesiumMap from './components/CesiumMap';
 import HomePage from './components/HomePage';
+import RestaurantChatPanel from './components/RestaurantChatPanel';
 import Sidebar from './components/Sidebar';
 import { normalizeRestaurantFeature, restaurantMatchesFilters } from './services/restaurantData';
 import { normalizeLandmarkFeature, normalizeTransportationFeature } from './services/mapData';
@@ -588,6 +589,7 @@ function App() {
             onSelectRestaurant={handleFocusRestaurant}
             onSelectMapItem={handleFocusMapItem}
           />
+          <RestaurantChatPanel />
         </Content>
       </Layout>
     </ConfigProvider>

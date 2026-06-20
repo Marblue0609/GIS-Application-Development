@@ -594,6 +594,218 @@ body {
   background: #2c9a5f;
 }
 
+.chat-toggle {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 12;
+  min-width: 118px;
+  box-shadow: 0 10px 24px rgba(38, 48, 44, 0.16);
+}
+
+.restaurant-chat-panel {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 12;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(380px, calc(100% - 36px));
+  height: min(560px, calc(100% - 36px));
+  overflow: hidden;
+  color: #2f2a26;
+  background: rgba(255, 253, 248, 0.97);
+  border: 1px solid rgba(234, 216, 199, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 18px 38px rgba(38, 48, 44, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px;
+  border-bottom: 1px solid #ead8c7;
+}
+
+.chat-header > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.chat-header strong {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  color: #2f2a26;
+  font-size: 16px;
+}
+
+.chat-kicker.ant-typography {
+  color: #9a7a68;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chat-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-header-actions .ant-tag {
+  max-width: 142px;
+  margin-inline-end: 0;
+  overflow: hidden;
+  color: #ff6b4a;
+  text-overflow: ellipsis;
+  background: #fff5eb;
+  border-color: #ffc4ab;
+}
+
+.chat-messages {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  min-height: 0;
+  padding: 14px;
+  overflow-y: auto;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #e4b995;
+  border-radius: 8px;
+}
+
+.chat-message {
+  display: flex;
+}
+
+.chat-message .markdown-content {
+  max-width: 86%;
+  padding: 9px 11px;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: 8px;
+}
+
+.chat-message.assistant {
+  justify-content: flex-start;
+}
+
+.chat-message.assistant .markdown-content {
+  color: #2f2a26;
+  background: #ffffff;
+  border: 1px solid #f0dfcf;
+}
+
+.chat-message.user {
+  justify-content: flex-end;
+}
+
+.chat-message.user .markdown-content {
+  color: #ffffff;
+  background: #ff6b4a;
+  border: 1px solid #ff6b4a;
+}
+
+.markdown-content p,
+.markdown-content ul,
+.markdown-content ol,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin: 0;
+}
+
+.markdown-content p + p,
+.markdown-content p + ul,
+.markdown-content p + ol,
+.markdown-content ul + p,
+.markdown-content ol + p,
+.markdown-content ul + ul,
+.markdown-content ol + ol,
+.markdown-content h4 + p,
+.markdown-content h5 + p,
+.markdown-content h6 + p {
+  margin-top: 7px;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  display: grid;
+  gap: 4px;
+  padding-left: 18px;
+}
+
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  color: inherit;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.markdown-content strong {
+  font-weight: 800;
+}
+
+.markdown-content code {
+  padding: 1px 5px;
+  color: #8a4a2f;
+  font-size: 12px;
+  background: #fff3ea;
+  border: 1px solid #ffc4ab;
+  border-radius: 5px;
+}
+
+.markdown-content a {
+  color: #3b83bd;
+  font-weight: 700;
+}
+
+.chat-message.user .markdown-content code {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+.chat-message.user .markdown-content a {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.chat-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: 8px;
+  padding: 12px;
+  background: #fff8f0;
+  border-top: 1px solid #ead8c7;
+}
+
+.chat-input-row .ant-input {
+  resize: none;
+}
+
+.chat-input-row .ant-btn {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+}
+
 .home-page {
   width: 100vw;
   height: 100vh;
@@ -965,6 +1177,17 @@ body {
     left: 10px;
     min-width: 0;
     max-width: calc(100% - 20px);
+  }
+
+  .chat-toggle,
+  .restaurant-chat-panel {
+    top: 10px;
+    right: 10px;
+  }
+
+  .restaurant-chat-panel {
+    width: calc(100% - 20px);
+    height: min(420px, calc(100% - 20px));
   }
 
   .map-legend {

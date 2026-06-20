@@ -10,7 +10,7 @@ const unwrapData = (payload) => payload?.data ?? payload;
 
 /**
  * 将后端返回的餐厅记录标准化为前端统一格式。
- * 同时兼容 hsh-ui 早期 GeoJSON 字段名和后端 snake_case 字段名。
+ * 同时兼容 frontend 早期 GeoJSON 字段名和后端 snake_case 字段名。
  *
  * @param {object} item - 后端原始餐厅对象
  * @returns {object|null} 标准化后的餐厅对象，含 id / layerType / name / rating / phone / category / categoryRaw / price / address / lng / lat / displayLng / displayLat / distanceM

@@ -1,19 +1,17 @@
-# 服务器抽风时候的备用方案
+# 本地数据库导入数据
 
-今天测试的时候发现服务器有时候容易抽风, 所以建议还是本地也安装一个 PostgreSQL + PostGIS 用于测试, 后面上地理空间数据库的时候反正也要装.  具体安装步骤可以问 AI; 
-
-安装完成后, 在 SQL Shell 里运行: 
+在 SQL Shell 里运行:
 
 ```sql
-CREATE USER citytaste_user WITH PASSWORD '123456'; 
+CREATE USER citytaste_user WITH PASSWORD '123456';
 
-CREATE DATABASE citytaste OWNER citytaste_user; 
+CREATE DATABASE citytaste OWNER citytaste_user;
 
-GRANT ALL PRIVILEGES ON DATABASE citytaste TO citytaste_user; 
+GRANT ALL PRIVILEGES ON DATABASE citytaste TO citytaste_user;
 
 CREATE EXTENSION postgis;
 
-SELECT postgis_version(); -- 用于测试是否成功安装了 PostGIS; 
+SELECT postgis_version(); -- 用于测试是否成功安装了 PostGIS;
 
 DROP TABLE IF EXISTS restaurants;
 DROP TABLE IF EXISTS landmarks;
@@ -90,27 +88,11 @@ ALTER SEQUENCE restaurants_restaurant_id_seq OWNER TO citytaste_user;
 ALTER SEQUENCE transportations_transportation_id_seq OWNER TO citytaste_user;
 ```
 
-然后回到项目的根目录, 也就是放着: 
+回到项目的根目录, 运行 `python tools/import_geojson.py`, 如果若导入成功会看到:
 
-```
-----                 -------------         ------ ----                                                                                                  
-d-----         2026/5/28     20:37                .vscode                                                                                               
-d-----         2026/5/28     21:56                backend                                                                                               
-d-----         2026/5/28     17:23                ld-data                                                                                               
-d-----         2026/5/30     21:20                scripts                                                                                               
--a----         2026/5/28     17:23           1463 .gitignore                                                                                            
--a----         2026/5/28     17:23          11801 instruction.md                                                                                        
--a----         2026/5/29     22:41          13673 plan.md                                                                                               
--a----         2026/5/28     17:23            116 README.md        
-```
-
-这些东西的目录, 运行 `python scripts/import_geojson.py`, 如果顺利的话会看到: 
-
-```
+```text
 landmarks imported
 restaurants imported
 transportations imported
 all geojson data imported
 ```
-
-然后就可以了; 

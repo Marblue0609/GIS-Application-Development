@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-LD_DATA_DIR = BASE_DIR / "ld-data" / "data" / "json"
+LD_DATA_DIR = BASE_DIR / "data" / "data" / "json"
 
 load_dotenv(BASE_DIR / "backend" / ".env")
 
