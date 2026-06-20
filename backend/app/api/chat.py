@@ -38,7 +38,9 @@ def read_restaurant_agents() -> str:
 
 def call_deepseek(messages: list[dict[str, str]]) -> dict:
     if not settings.deepseek_api_key:
-        raise HTTPException(status_code=503, detail="DEEPSEEK_API_KEY is not configured")
+        raise HTTPException(
+            status_code=503, detail="DEEPSEEK_API_KEY is not configured"
+        )
 
     endpoint = f"{settings.deepseek_base_url.rstrip('/')}/chat/completions"
     payload = {
@@ -64,11 +66,17 @@ def call_deepseek(messages: list[dict[str, str]]) -> dict:
             return json.loads(response.read().decode("utf-8"))
     except HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")
-        raise HTTPException(status_code=502, detail=f"DeepSeek API error: {detail}") from error
+        raise HTTPException(
+            status_code=502, detail=f"DeepSeek API error: {detail}"
+        ) from error
     except URLError as error:
-        raise HTTPException(status_code=502, detail=f"DeepSeek API unavailable: {error.reason}") from error
+        raise HTTPException(
+            status_code=502, detail=f"DeepSeek API unavailable: {error.reason}"
+        ) from error
     except TimeoutError as error:
-        raise HTTPException(status_code=504, detail="DeepSeek API request timed out") from error
+        raise HTTPException(
+            status_code=504, detail="DeepSeek API request timed out"
+        ) from error
 
 
 @router.post("/restaurants")
