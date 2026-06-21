@@ -88,3 +88,10 @@ temp/
 # ==========================================
 .DS_Store
 Thumbs.db
+
+# ==========================================
+# 9. README for developers
+# ==========================================
+instruction.md
+plan.md
+README_FOR_DEVELOPER.md
