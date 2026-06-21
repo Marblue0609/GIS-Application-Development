@@ -90,7 +90,14 @@ temp/
 Thumbs.db
 
 # ==========================================
-# 9. README for developers
+# 9. Custom Ignores
+# ==========================================
+报告/
+打开教程/
+.codegraph/
+ppt制作/
+要求.pdf
+# 10. README for developers
 # ==========================================
 /instruction.md
 /plan.md
