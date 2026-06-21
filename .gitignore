@@ -92,6 +92,6 @@ Thumbs.db
 # ==========================================
 # 9. README for developers
 # ==========================================
-instruction.md
-plan.md
-README_FOR_DEVELOPER.md
+/instruction.md
+/plan.md
+/README_FOR_DEVELOPER.md
