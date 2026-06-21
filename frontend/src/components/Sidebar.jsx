@@ -98,7 +98,7 @@ function Sidebar({
 }) {
   const [radius, setRadius] = useState(1000);
   const [routeMode, setRouteMode] = useState('walking');
-  const [routeStart, setRouteStart] = useState('当前位置');
+  // const [routeStart, setRouteStart] = useState('当前位置');
   const [analysisCenterId, setAnalysisCenterId] = useState(null);
   const [analysisCenter, setAnalysisCenter] = useState(null);
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -136,13 +136,13 @@ function Sidebar({
   ];
 
   // 路线起点选项：当前位置 + 交通设施名称列表
-  const routeStartOptions = [
-    { value: '当前位置', label: '当前位置' },
-    ...uniqueBy(uniqueTransportations, (item) => item.name).slice(0, 90).map((item) => ({
-      value: item.name,
-      label: item.name,
-    })),
-  ];
+  // const routeStartOptions = [
+  //   { value: '当前位置', label: '当前位置' },
+  //   ...uniqueBy(uniqueTransportations, (item) => item.name).slice(0, 90).map((item) => ({
+  //     value: item.name,
+  //     label: item.name,
+  //   })),
+  // ];
 
   // ECharts 环形饼图（甜甜圈图）— 缓冲区菜系结构展示
   const bufferChartOption = useMemo(() => ({
@@ -392,13 +392,13 @@ function Sidebar({
         <span>打卡路线预览</span>
       </div>
       <Space orientation="vertical" size={14} className="control-stack">
-        <Select
+        {/* <Select
           value={routeStart}
           onChange={setRouteStart}
           options={routeStartOptions}
           showSearch
           optionFilterProp="label"
-        />
+        /> */}
         <Select value={routeMode} onChange={setRouteMode} options={travelModes} />
         <div className="route-summary">
           <Statistic title="清单点位" value={checklist.length} suffix="个" />

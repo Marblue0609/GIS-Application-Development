@@ -14,9 +14,11 @@ backend/
 │   └── api/
 │       ├── restaurants.py   # 餐厅列表 / 详情
 │       ├── search.py        # 多条件检索 + 距离搜索
+│       ├── analysis.py      # 空间缓冲区分析 + 统计
 │       ├── recommend.py     # 随机盲盒
 │       ├── checklist.py     # 打卡清单 (增删改查)
-│       └── route.py         # 路线规划 (高德真实路网)
+│       ├── route.py         # 路线规划 (高德真实路网)
+│       └── chat.py          # 餐厅智能问答助手 (DeepSeek)
 ├── requirements.txt
 └── .env.example             # 配置模板 (真实 .env 不提交)
 ```
@@ -102,6 +104,11 @@ id, layerType, name, rating, phone, category, price, address, lng, lat
 | GET | `/api/restaurants/search` | `keyword` `category` `min_price` `max_price` `min_rating` `limit` `offset` `center_lon` `center_lat` `radius` |
 
 - 传 `center_lon` + `center_lat` + `radius`(米) 时启用距离搜索（PostGIS `ST_DWithin`），结果带 `distanceM` 并按距离排序。
+
+### 缓冲区分析 `analysis.py`
+| 方法 | 路径 | 参数 | 说明 |
+|---|---|---|---|
+| GET | `/api/analysis/buffer` | `lon` `lat` `radius` | 接收中心点坐标与半径，利用 PostGIS `ST_DWithin` 实时查询，不仅返回圈内的餐厅列表，还会使用 `GROUP BY` 聚合返回各菜系的统计数据 (`categoryStats`)，供前端 ECharts 图表渲染。 |
 
 ### 随机盲盒 `recommend.py`
 | 方法 | 路径 | 参数 | 说明 |
